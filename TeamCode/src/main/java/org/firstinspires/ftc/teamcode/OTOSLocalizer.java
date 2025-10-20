@@ -42,6 +42,12 @@ public class OTOSLocalizer implements Localizer {
         otos.setOffset(PARAMS.offset);
     }
 
+    // Action(s)
+    @Override
+    public void resetRobotHeading() {
+        otos.resetTracking();
+    }
+
     @Override
     public Pose2d getPose() {
         return currentPose;

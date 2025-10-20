@@ -38,6 +38,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
+import com.qualcomm.robotcore.robot.Robot;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
@@ -45,6 +46,7 @@ import org.firstinspires.ftc.teamcode.messages.DriveCommandMessage;
 import org.firstinspires.ftc.teamcode.messages.MecanumCommandMessage;
 import org.firstinspires.ftc.teamcode.messages.MecanumLocalizerInputsMessage;
 import org.firstinspires.ftc.teamcode.messages.PoseMessage;
+import org.firstinspires.ftc.teamcode.utility.RobotConstants;
 
 import java.lang.Math;
 import java.util.Arrays;
@@ -52,43 +54,43 @@ import java.util.LinkedList;
 import java.util.List;
 
 @Config
-public final class MecanumDrive {
+public class MecanumDrive {
     public static class Params {
         // IMU orientation
         // TODO: fill in these values based on
         //   see https://ftc-docs.firstinspires.org/en/latest/programming_resources/imu/imu.html?highlight=imu#physical-hub-mounting
         public RevHubOrientationOnRobot.LogoFacingDirection logoFacingDirection =
-                RevHubOrientationOnRobot.LogoFacingDirection.UP;
+                RobotConstants.HardwareConfiguration.kControlHubLogoDirection;
         public RevHubOrientationOnRobot.UsbFacingDirection usbFacingDirection =
-                RevHubOrientationOnRobot.UsbFacingDirection.FORWARD;
+                RobotConstants.HardwareConfiguration.kControlHubUsbDirection;
 
         // drive model parameters
-        public double inPerTick = 1;
-        public double lateralInPerTick = inPerTick;
-        public double trackWidthTicks = 0;
+        public double inPerTick = RobotConstants.Drivetrain.Odometry.kDriveInchPerTick;
+        public double lateralInPerTick = RobotConstants.Drivetrain.Odometry.kDriveLateralInchPerTick;
+        public double trackWidthTicks = RobotConstants.Drivetrain.Odometry.kTrackWidthTick;
 
         // feedforward parameters (in tick units)
-        public double kS = 0;
-        public double kV = 0;
-        public double kA = 0;
+        public double kS = RobotConstants.Drivetrain.Odometry.kFeedForwardTicksSValue;
+        public double kV = RobotConstants.Drivetrain.Odometry.kFeedForwardTicksVValue;
+        public double kA = RobotConstants.Drivetrain.Odometry.kFeedForwardTicksAValue;
 
         // path profile parameters (in inches)
-        public double maxWheelVel = 50;
-        public double minProfileAccel = -30;
-        public double maxProfileAccel = 50;
+        public double maxWheelVel = RobotConstants.Drivetrain.Odometry.kMaxWheelVel;
+        public double minProfileAccel = RobotConstants.Drivetrain.Odometry.kMinProfileAccel;
+        public double maxProfileAccel = RobotConstants.Drivetrain.Odometry.kMaxProfileAccel;
 
         // turn profile parameters (in radians)
         public double maxAngVel = Math.PI; // shared with path
         public double maxAngAccel = Math.PI;
 
         // path controller gains
-        public double axialGain = 0.0;
-        public double lateralGain = 0.0;
-        public double headingGain = 0.0; // shared with turn
+        public double axialGain = RobotConstants.Drivetrain.Odometry.kAxialGain;
+        public double lateralGain = RobotConstants.Drivetrain.Odometry.kLateralGain;
+        public double headingGain = RobotConstants.Drivetrain.Odometry.kHeadingGain; // shared with turn
 
-        public double axialVelGain = 0.0;
-        public double lateralVelGain = 0.0;
-        public double headingVelGain = 0.0; // shared with turn
+        public double axialVelGain = RobotConstants.Drivetrain.Odometry.kAxialVelGain;
+        public double lateralVelGain = RobotConstants.Drivetrain.Odometry.kLateralVelGain;
+        public double headingVelGain = RobotConstants.Drivetrain.Odometry.kHeadingVelGain; // shared with turn
     }
 
     public static Params PARAMS = new Params();
@@ -138,9 +140,17 @@ public final class MecanumDrive {
             imu = lazyImu.get();
 
             // TODO: reverse encoders if needed
-            //   leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
+//           leftFront.setDirection(DcMotorSimple.Direction.FORWARD);
+//           leftBack.setDirection(DcMotorSimple.Direction.FORWARD);
+//           rightBack.setDirection(DcMotorSimple.Direction.REVERSE);
+//           rightFront.setDirection(DcMotorSimple.Direction.REVERSE);
 
             this.pose = pose;
+        }
+
+        @Override
+        public void resetRobotHeading() {
+            lazyImu.get().resetYaw();
         }
 
         @Override
@@ -225,10 +235,10 @@ public final class MecanumDrive {
 
         // TODO: make sure your config has motors with these names (or change them)
         //   see https://ftc-docs.firstinspires.org/en/latest/hardware_and_software_configuration/configuring/index.html
-        leftFront = hardwareMap.get(DcMotorEx.class, "leftFront");
-        leftBack = hardwareMap.get(DcMotorEx.class, "leftBack");
-        rightBack = hardwareMap.get(DcMotorEx.class, "rightBack");
-        rightFront = hardwareMap.get(DcMotorEx.class, "rightFront");
+        leftFront = hardwareMap.get(DcMotorEx.class, RobotConstants.HardwareConfiguration.kLabelDrivetrainMotorLeftFront);
+        leftBack = hardwareMap.get(DcMotorEx.class, RobotConstants.HardwareConfiguration.kLabelDrivetrainMotorLeftBack);
+        rightBack = hardwareMap.get(DcMotorEx.class, RobotConstants.HardwareConfiguration.kLabelDrivetrainMotorRightBack);
+        rightFront = hardwareMap.get(DcMotorEx.class, RobotConstants.HardwareConfiguration.kLabelDrivetrainMotorRightFront);
 
         leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         leftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -236,16 +246,22 @@ public final class MecanumDrive {
         rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         // TODO: reverse motor directions if needed
-        //   leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
+        leftFront.setDirection(DcMotorSimple.Direction.REVERSE); // gray team and green team
+        leftBack.setDirection(DcMotorSimple.Direction.FORWARD); // green team
+        rightFront.setDirection(DcMotorSimple.Direction.FORWARD);
+        rightBack.setDirection(DcMotorSimple.Direction.FORWARD);
 
         // TODO: make sure your config has an IMU with this name (can be BNO or BHI)
         //   see https://ftc-docs.firstinspires.org/en/latest/hardware_and_software_configuration/configuring/index.html
-        lazyImu = new LazyHardwareMapImu(hardwareMap, "imu", new RevHubOrientationOnRobot(
+        lazyImu = new LazyHardwareMapImu(hardwareMap, RobotConstants.HardwareConfiguration.kLabelDrivetrainIMUDeviceOnboard, new RevHubOrientationOnRobot(
                 PARAMS.logoFacingDirection, PARAMS.usbFacingDirection));
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
-        localizer = new DriveLocalizer(pose);
+        // TODO: set to correct localizer for robot
+//        localizer = new DriveLocalizer(pose);
+        localizer = new PinpointLocalizer(hardwareMap, PARAMS.inPerTick, pose);
+//        localizer = new TwoDeadWheelLocalizer(hardwareMap, lazyImu.get(), PARAMS.inPerTick, pose);
 
         FlightRecorder.write("MECANUM_PARAMS", PARAMS);
     }
@@ -451,14 +467,14 @@ public final class MecanumDrive {
     public PoseVelocity2d updatePoseEstimate() {
         PoseVelocity2d vel = localizer.update();
         poseHistory.add(localizer.getPose());
-        
+
         while (poseHistory.size() > 100) {
             poseHistory.removeFirst();
         }
 
         estimatedPoseWriter.write(new PoseMessage(localizer.getPose()));
-        
-        
+
+
         return vel;
     }
 

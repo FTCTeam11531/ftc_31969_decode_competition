@@ -7,6 +7,12 @@ import com.acmerobotics.roadrunner.PoseVelocity2d;
  * Interface for localization methods.
  */
 public interface Localizer {
+
+
+    // Action(s)
+    void resetRobotHeading();
+
+
     void setPose(Pose2d pose);
 
     /**
@@ -22,4 +28,5 @@ public interface Localizer {
      * @return the Localizer's current velocity estimate
      */
     PoseVelocity2d update();
+
 }
