@@ -2,8 +2,10 @@ package org.firstinspires.ftc.teamcode.system.drivetrain;
 
 import com.acmerobotics.roadrunner.Pose2d;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 import org.firstinspires.ftc.teamcode.utility.RobotConstants;
 
@@ -141,17 +143,23 @@ public class DrivetrainMecanum extends MecanumDrive {
 
         double modMaintainMotorRatio;
 
+        // Axial = input y
+        // Lateral = input x
+        // Yaw = rotational
+
         double modAxial = (inputAxial * maxOutputPowerPercent);  // Note: pushing stick forward gives negative value
-        double modLateral = (inputLateral * maxOutputPowerPercent) * RobotConstants.Drivetrain.Configuration.kMotorLateralMovementStrafingCorrection; // Mod to even out strafing
+        double modLateral = (inputLateral * maxOutputPowerPercent);
         double modYaw = (inputYaw * maxOutputPowerPercent);
 
         // Get heading value from the IMU
-        updateOdometry();
-        double botHeading = getRobotHeadingAdj();
+//        updateOdometry();
+        double botHeading = getRobotHeadingOnBoard();
 
         // Adjust the lateral and axial movements based on heading
-        double adjLateral = modLateral * Math.cos(botHeading) - modAxial * Math.sin(botHeading);
-        double adjAxial = modLateral * Math.sin(botHeading) + modAxial * Math.cos(botHeading);
+        double adjLateral = modLateral * Math.cos(-botHeading) - modAxial * Math.sin(-botHeading);
+        double adjAxial = modLateral * Math.sin(-botHeading) + modAxial * Math.cos(-botHeading);
+
+        adjLateral = adjLateral * RobotConstants.Drivetrain.Configuration.kMotorLateralMovementStrafingCorrection; // Mod to even out strafing
 
         // Normalize the values so no wheel power exceeds 100%
         // This ensures that the robot maintains the desired motion.
@@ -167,6 +175,29 @@ public class DrivetrainMecanum extends MecanumDrive {
         // Use existing function to drive both wheels.
         setDriveMotorPower(leftFrontPower, rightFrontPower, leftBackPower, rightBackPower);
     }
+
+//    public void driveMecanumVectorWeighted(Pose2d drivePose) {
+//        Pose2d newPose = drivePose;
+//
+//        if(Math.abs(drivePose.position.x)
+//                + Math.abs(drivePose.position.y)
+//                + Math.abs(drivePose.heading.toDouble()) > 1) {
+//
+//            double adjDivisor = 1 * Math.abs(drivePose.position.x)
+//                    + 1 * Math.abs(drivePose.position.y)
+//                    + 1 * Math.abs(drivePose.heading.toDouble());
+//
+//            newPose = new Pose2d(
+//                      1 * drivePose.position.x
+//                    , 1 * drivePose.position.y
+//                    , 1 * drivePose.heading.toDouble()
+//            ).
+//
+//            )
+//
+//        }
+//
+//    }
 
     /**
      * <h2>Drivetrain Method: driveMecanum</h2>
@@ -231,6 +262,7 @@ public class DrivetrainMecanum extends MecanumDrive {
         // Set the Heading Offset to the IMU raw heading
 //        pinpoint.resetPosAndIMU();
         lazyImu.get().resetYaw();
+        localizer.resetRobotHeading();
     }
 
     // -----------------------------------------
@@ -280,6 +312,10 @@ public class DrivetrainMecanum extends MecanumDrive {
         return localizer.getPose().heading.real;
     }
 
+    public double getRobotHeadingOnBoard() {
+        return lazyImu.get().getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
+    }
+
     /**
      * <h2>Drivetrain Method: getRobotHeadingAdj</h2>
      * <hr>
@@ -302,7 +338,7 @@ public class DrivetrainMecanum extends MecanumDrive {
 
         // Get heading value from the IMU
         // Read inverse IMU heading, as the IMU heading is CW positive
-        outRobotHeadingValue = getRobotHeadingRaw() * -1; //+ RobotConstants.CommonSettings.getImuTransitionAdjustment();
+        outRobotHeadingValue = getRobotHeadingRaw() + RobotConstants.Drivetrain.Odometry.Transition.getImuTransitionAdjustment();
 
         // Should the IMU heading be inversed? Does it matter?
         // Will need to view the heading readout on the driver hub
@@ -323,6 +359,11 @@ public class DrivetrainMecanum extends MecanumDrive {
     // -----------------------------------------
     // Set Method(s)
     // -----------------------------------------
+
+    public void setPose(Pose2d pose) {
+        localizer.setPose(pose);
+    }
+
 
     /**
      * <h2>Drivetrain Method: setDriveMotorPower</h2>
@@ -370,6 +411,7 @@ public class DrivetrainMecanum extends MecanumDrive {
 //            itemMotor.setZeroPowerBehavior(zeroPowerMode);
 //        }
 //    }
+
 
     public void setDrivetrainMode(DrivetrainMode newDrivetrainMode) {
         drivetrainMode = newDrivetrainMode;

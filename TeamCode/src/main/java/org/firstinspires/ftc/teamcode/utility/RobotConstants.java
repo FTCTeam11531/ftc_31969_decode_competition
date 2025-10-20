@@ -1,6 +1,10 @@
 package org.firstinspires.ftc.teamcode.utility;
 
 import com.acmerobotics.roadrunner.Pose2d;
+import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
+import com.sun.tools.javac.util.Pair;
+
+import kotlin.Triple;
 
 public class RobotConstants {
 
@@ -12,7 +16,6 @@ public class RobotConstants {
         public static final String kAboutSeasonGameName = "Decode";
         public static final String kAboutSeasonPeriod = "2025 / 2026";
     }
-
 
     public static final class UnitConversion {
 
@@ -119,6 +122,65 @@ public class RobotConstants {
         }
     }
 
+    public static final class GameElements {
+
+        public static final String kArtifactOneColor = "purple";
+        public static final String kArtifactTwoColor = "green";
+
+        public static final class AprilTag {
+
+            public static final class Localization {
+                public static final Pair<Integer, String> kBlueLaunchZone = new Pair<>(20, "Blue");
+                public static final Pair<Integer, String> kRedLaunchZone = new Pair<>(24, "Red");
+
+            }
+
+            public static final class Obelisk {
+                public static final int kMotifOneId = 21;
+                public static final Triple<String, String, String> kMotifOnePattern =
+                        new Triple<>(kArtifactTwoColor, kArtifactOneColor, kArtifactOneColor);
+
+                public static final int kMotifTwoId = 22;
+                public static final Triple<String, String, String> kMotifTwoPattern =
+                        new Triple<>(kArtifactOneColor, kArtifactTwoColor, kArtifactOneColor);
+
+                public static final int kMotifThreeId = 23;
+                public static final Triple<String, String, String> kMotifThreePattern =
+                        new Triple<>(kArtifactOneColor, kArtifactTwoColor, kArtifactOneColor);
+
+//                public static final Triple<Integer, String, Triple<String, String, String>> kPatternA =
+//                        new Triple<>(
+//                                21
+//                                , "Motif One"
+//                                , new Triple<>(
+//                                        "Green"
+//                                    , "Purple"
+//                                    , "Purple"));
+//
+//                public static final Triple<Integer, String, Triple<String, String, String>> kPatternB =
+//                        new Triple<>(
+//                                22
+//                                , "Motif Two"
+//                                , new Triple<>(
+//                                "Purple"
+//                                , "Green"
+//                                , "Purple"));
+//
+//                public static final Triple<Integer, String, Triple<String, String, String>> kPatternC =
+//                        new Triple<>(
+//                                23
+//                                , "Motif Three"
+//                                , new Triple<>(
+//                                "Purple"
+//                                , "Purple"
+//                                , "Green"));
+
+            }
+
+        }
+
+    }
+
     public static final class OpModeTransition {
 
         private static Pose2d poseFinalOpMode = new Pose2d(0,0, Math.toRadians(0));
@@ -152,29 +214,35 @@ public class RobotConstants {
         public static final String kLabelDrivetrainMotorRightBack = "drive_back_right";
 
         // Drivetrain - imu
-        public static final String kLabelDrivetrainIMUDeviceNavX = "imu_navx";
         public static final String kLabelDrivetrainIMUDevicePinpoint = "imu_pinpoint";
-        public static final String kLabelDrivetrainIMUDeviceDefault = "imu_ch";
+        public static final String kLabelDrivetrainIMUDeviceOnboard = "imu_ch";
+        public static final String kLabelDrivetrainImuDeviceMain = kLabelDrivetrainIMUDevicePinpoint;
 
-        // Drivetrain - Odometry
-
-
-        // Intake
-
-
-        // Indexer
-
+        // Drivetrain - imu - onboard Controlhub
+        // TODO: Define the proper orientation of the Rev Control Hub on the Robot
+        // Reference: https://ftc-docs.firstinspires.org/en/latest/programming_resources/imu/imu.html
+        public static final RevHubOrientationOnRobot.LogoFacingDirection kControlHubLogoDirection = RevHubOrientationOnRobot.LogoFacingDirection.UP;
+        public static final RevHubOrientationOnRobot.UsbFacingDirection kControlHubUsbDirection = RevHubOrientationOnRobot.UsbFacingDirection.BACKWARD;
 
         // Shooter - Motor(s)
         public static final String kLabelShooterMotorLeft = "shooter_left";
         public static final String kLabelShooterMotorRight = "shooter_right";
 
+        // Intake - Motor(s)
+        public static final String kLabelIntakeMotorLeft = "intake_left";
+        public static final String kLabelIntakeMotorRight = "intake_right";
+
+        // Indexer - Servo(s)
+        public static final String kLabelIndexServoLeft = "index_left";
+        public static final String kLabelIndexServoRight = "index_right";
 
 
-        // Camera
+        // Vision - Camera
+        public static final String kLabelCameraAIFront = "camera_ai_front";
+        public static final String kLabelCameraAprilTag = "camera_apriltag";
 
-
-
+        // Sensor(s)
+        public static final String kLabelSensorAllianceTag = "sensor_alliance_tag";
 
     }
 
@@ -205,7 +273,7 @@ public class RobotConstants {
             public static final double kMotorOutputPowerHigh = 1.0;
             public static final double kMotorOutputPowerMedium = .80;
             public static final double kMotorOutputPowerLow = .50;
-            public static final double kMotorOutputPowerSnail = .20;
+            public static final double kMotorOutputPowerSnail = .35;
         }
 
         public static final class Odometry {
@@ -215,24 +283,37 @@ public class RobotConstants {
             public static final double kOdometryPodOffsetXMillimeters = -53.975;
             public static final double kOdometryPodOffsetYMillimeters = -146.05;
 
-            public static final double kDriveInchPerTick = 1;
-            public static final double kTrackWidthTick = 12.769966979946723;
+            // Use ForwardPushTest
+            // Calculate inches traveled divided by encoder ticks
+            // 71 inches traveled in 36118 encoder ticks
+            public static final double kDriveInchPerTick = 0.0019657788360374; // start with 1
 
-            public static final double kFeedForwardTicksVValue = 0.1800743324232725;
-            public static final double kFeedForwardTicksSValue = 0.9185997050940498;
-            public static final double kFeedForwardTicksAValue = 0.0211111;
+            // Use LateralRampLogger
+            public static final double kDriveLateralInchPerTick = 0.0015656919615167871; //0.0015410113296490046;
 
-            public static final double kMaxWheelVelocity = 50;
-            public static final double kMinProfileAcceleration = -30;
-            public static final double kMaxProfileAcceleration = 50;
+            // Use AngularRampLogger
+            public static final double kTrackWidthTick = 8071.8625512372755; //7746.47525654597;  // 7869.6344302389850; // start with zero
 
-            public static final double kAxialGain = 4.0;
-            public static final double kLateralGain = 4.0;
-            public static final double kHeadingGain = 2.0;
+            // Use ForwardRampLogger
+            //
+            public static final double kFeedForwardTicksVValue = 0.0005233626439114997; //0.0005356723804858107; // start with zero
+            public static final double kFeedForwardTicksSValue = 0.7284380480680506; //0.7144413226928252; // start with zero
+            public static final double kFeedForwardTicksAValue = 0.0001451; //0.0011111; // start with zero
 
-            public static final double kAxialVelGain = 0.0;
-            public static final double kLateralVelGain = 0.0;
-            public static final double kHeadingVelGain = 0.0;
+            // path profile parameters (in inches)
+            public static final double kMaxWheelVel = 50; // start with 50
+            public static final double kMinProfileAccel = -30; // start with -30
+            public static final double kMaxProfileAccel = 50; // start with 50
+
+
+            // path controller gains
+            public static final double kAxialGain = 3.0; //4.0; // start with zero.zero
+            public static final double kLateralGain = 3.0; //4.0; // start with zero.zero
+            public static final double kHeadingGain = 4.5; //2.0; // start with zero.zero
+
+            public static final double kAxialVelGain = 0.0; // start with zero.zero
+            public static final double kLateralVelGain = 0.0; // start with zero.zero
+            public static final double kHeadingVelGain = 0.0; // start with zero.zero
 
             public static final class Transition {
                 public static double imuTransitionAdjustment = 0;
@@ -245,6 +326,7 @@ public class RobotConstants {
                     imuTransitionAdjustment = heading;
                 }
             }
+
 
         }
 
@@ -264,30 +346,136 @@ public class RobotConstants {
 
     }
 
+    public static final class Shooter {
+
+        public static final class Configuration {
+
+            public static final double kMotorOutputPowerMax = 1.0;
+
+            public static final double kMotorAchievableMaxRpmFraction = 1.0;
+
+            // TODO: test and set final speed value(s)
+            public static final double kMotorOutputPowerHigh = 1.0;
+            public static final double kMotorOutputPowerMedium = .80;
+            public static final double kMotorOutputPowerLow = .50;
+            public static final double kMotorOutputPowerSnail = .35;
+
+        }
+    }
+
+    public static final class Intake {
+
+        public static final class Configuration {
+
+            public static final double kMotorOutputPowerMax = 1.0;
+
+            public static final double kMotorAchievableMaxRpmFraction = 1.0;
+
+            // TODO: test and set final speed value(s)
+            public static final double kMotorOutputPowerHigh = 1.0;
+            public static final double kMotorOutputPowerMedium = .80;
+            public static final double kMotorOutputPowerLow = .50;
+            public static final double kMotorOutputPowerSnail = .35;
+
+        }
+
+    }
+
+    public static final class Indexer {
+        public static final class Servo {
+            public static final class Setpoint {
+                public static final double kInit = 0.0;
+                public static final double kForward = 1.0;
+                public static final double kReverse = -1.0;
+            }
+
+        }
+
+        public static final class Sensor {
+
+        }
+
+    }
+
+    public static final class Sound {
+
+        // Build-in Sound File Names
+        public static final String kSoundFileRogerRoger = "ss_roger_roger";
+        public static final String kSoundFileWookie = "ss_wookie";
+        public static final String kSoundFileDarthVader = "ss_darth_vader";
+        public static final String kSoundFileBb8Up = "ss_bb8_up";
+        public static final String kSoundFileBb8Down = "ss_bb8_down";
+        public static final String kSoundFileLightSaber = "ss_light_saber";
+        public static final String kSoundFileLightSaberLong = "ss_light_saber_long";
+
+        public static final float kSoundVolumeDefault = 0.5f;
+        public static final float kSoundVolumnMax = 1.0f;
+        public static final float kSoundVolumnMin = 0.2f;
+        public static final float kSoundVolumnSetpoint = kSoundVolumnMax;
+
+
+    }
+
     public static final class Vision {
 
-        public static final class Alliance {
+        public static final class HuskyLens {
 
-            public static final String kAllianceLabelRed = "red";
-            public static final String kAllianceLabelBlue = "blue";
+            // AI Camera Setting(s)
+
+            // AI Camera Mode(s)
+            public static final String kLabelCameraModeAprilTag = "april_tag";
+            public static final String kLabelCameraModeObjectTracking = "object_tracking";
+            public static final String kLabelCameraModeObjectRecognition = "object_recognition";
+
+        }
+
+        public static final class CameraAprilTag {
+
+            /**
+             * https://ftc-docs.firstinspires.org/en/latest/apriltag/vision_portal/apriltag_localization/apriltag-localization.html
+             *
+             * Variables to store the position and orientation of the camera on the robot. Setting these
+             * values requires a definition of the axes of the camera and robot:
+             *
+             * Camera axes:
+             * Origin location: Center of the lens
+             * Axes orientation: +x right, +y down, +z forward (from camera's perspective)
+             *
+             * Robot axes (this is typical, but you can define this however you want):
+             * Origin location: Center of the robot at field height
+             * Axes orientation: +x right, +y forward, +z upward
+             *
+             * Position:
+             * If all values are zero (no translation), that implies the camera is at the center of the
+             * robot. Suppose your camera is positioned 5 inches to the left, 7 inches forward, and 12
+             * inches above the ground - you would need to set the position to (-5, 7, 12).
+             *
+             * Orientation:
+             * If all values are zero (no rotation), that implies the camera is pointing straight up. In
+             * most cases, you'll need to set the pitch to -90 degrees (rotation about the x-axis), meaning
+             * the camera is horizontal. Use a yaw of 0 if the camera is pointing forwards, +90 degrees if
+             * it's pointing straight left, -90 degrees for straight right, etc. You can also set the roll
+             * to +/-90 degrees if it's vertical, or 180 degrees if it's upside-down.
+             */
+            public static final class Pose {
+                public static final double kPositionX = 0;
+                public static final double kPositionY = 7.5;
+                public static final double kPositionZ = 14.0;
+
+                public static final double kOrientationYaw = 0;
+                public static final double kOrientationPitch = -90;
+                public static final double kOrientationRoll = 0;
+
+            }
         }
 
     }
 
+    public static final class Sensors {
 
-    public static final class Lighting {
-
-        // Lighting Enabled (True/False)
-        // -- Only enabled if a lighting controller and lighting is installed on the robot
-        public static final boolean kEnableLighting = true;
-
-        public static final class Pattern {
-
+        public static final class AllianceTag {
+            public static final boolean kIsLedEnabled = true;
         }
-
-
     }
-
-
 
 }
