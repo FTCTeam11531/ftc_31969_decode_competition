@@ -10,12 +10,15 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit;
+import org.firstinspires.ftc.teamcode.utility.RobotConstants;
 
 import java.util.Objects;
 
 @Config
 public final class PinpointLocalizer implements Localizer {
     public static class Params {
+
+        // TODO: Set encoder positions?
         public double parYTicks = 0.0; // y position of the parallel encoder (in tick units)
         public double perpXTicks = 0.0; // x position of the perpendicular encoder (in tick units)
     }
@@ -31,7 +34,7 @@ public final class PinpointLocalizer implements Localizer {
     public PinpointLocalizer(HardwareMap hardwareMap, double inPerTick, Pose2d initialPose) {
         // TODO: make sure your config has a Pinpoint device with this name
         //   see https://ftc-docs.firstinspires.org/en/latest/hardware_and_software_configuration/configuring/index.html
-        driver = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
+        driver = hardwareMap.get(GoBildaPinpointDriver.class, RobotConstants.HardwareConfiguration.kLabelDrivetrainIMUDevicePinpoint);
 
         double mmPerTick = inPerTick * 25.4;
         driver.setEncoderResolution(1 / mmPerTick, DistanceUnit.MM);
@@ -46,6 +49,12 @@ public final class PinpointLocalizer implements Localizer {
         driver.resetPosAndIMU();
 
         txWorldPinpoint = initialPose;
+    }
+
+    // Action(s)
+    @Override
+    public void resetRobotHeading() {
+        driver.resetPosAndIMU();
     }
 
     @Override
@@ -70,4 +79,5 @@ public final class PinpointLocalizer implements Localizer {
         }
         return new PoseVelocity2d(new Vector2d(0, 0), 0);
     }
+
 }

@@ -54,6 +54,10 @@ public final class ThreeDeadWheelLocalizer implements Localizer {
         pose = initialPose;
     }
 
+    // Action(s)
+    @Override
+    public void resetRobotHeading() {}
+
     @Override
     public void setPose(Pose2d pose) {
         this.pose = pose;
