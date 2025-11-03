@@ -19,6 +19,7 @@ import org.firstinspires.ftc.teamcode.Localizer;
 import org.firstinspires.ftc.teamcode.system.drivetrain.DrivetrainMecanum;
 import org.firstinspires.ftc.teamcode.system.indexer.Indexer;
 import org.firstinspires.ftc.teamcode.system.intake.Intake;
+import org.firstinspires.ftc.teamcode.system.lighting.Lighting;
 import org.firstinspires.ftc.teamcode.system.shooter.Shooter;
 import org.firstinspires.ftc.teamcode.system.sound.Sound;
 import org.firstinspires.ftc.teamcode.system.vision.Vision;
@@ -48,6 +49,9 @@ public class LoadingLaunchZone extends LinearOpMode {
     // System - Sound
     Sound sound = new Sound(this);
 
+    // System - Lighting
+    Lighting lighting = new Lighting(this);
+
     @Override
     public void runOpMode() throws InterruptedException {
 
@@ -62,6 +66,8 @@ public class LoadingLaunchZone extends LinearOpMode {
         int patternIdObelisk, pathAllianceAdjX, pathAllianceAdjY, headingAllianceAdj;
 
         AprilTagDetection localizationData = null;
+
+        String labelAlliance;
 
 
         // Setup Telemetry
@@ -92,11 +98,15 @@ public class LoadingLaunchZone extends LinearOpMode {
         // System - Sound
         sound.init();
 
+        // System - Lighting
+        lighting.init();
+
         // -- Configuration - Get Initial Pose for Drivetrain
         if(vision.getDetectedAllianceColor().equals("blue")) {
             pathAllianceAdjX = 1;
             pathAllianceAdjY = -1;
             headingAllianceAdj = 0;
+            labelAlliance = "blue";
 //            initialPose = RobotConstants.Drivetrain.Autonomous.Pose.kInitialPoseHangmanBlue;
 //            sysLighting.setLightPattern(RobotConstants.Lighting.Pattern.Default.kAutonomousAllianceBlueHangman);
         }
@@ -104,6 +114,7 @@ public class LoadingLaunchZone extends LinearOpMode {
             pathAllianceAdjX = 1;
             pathAllianceAdjY = 1;
             headingAllianceAdj = 180;
+            labelAlliance = "red";
 //            initialPose = RobotConstants.Drivetrain.Autonomous.Pose.kInitialPoseHangmanRed;
 //            sysLighting.setLightPattern(RobotConstants.Lighting.Pattern.Default.kAutonomousAllianceRedHangman);
         }
@@ -195,6 +206,26 @@ public class LoadingLaunchZone extends LinearOpMode {
             telemetry.update();
             idle();
 
+            // ------------------------------------------------------------
+            // Lighting
+            // ------------------------------------------------------------
+            if(shooter.checkShooterVelocityLevel(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft
+                    , RobotConstants.Shooter.Configuration.kVelocityMin)
+                    || shooter.checkShooterVelocityLevel(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight
+                    , RobotConstants.Shooter.Configuration.kVelocityMin)) {
+
+                lighting.setLightPattern(RobotConstants.Lighting.Pattern.kReadyToShoot);
+            }
+            else if(vision.checkTargetBearing()) {
+                lighting.setLightPattern(RobotConstants.Lighting.Pattern.kOnTarget);
+            }
+            else if(opModeRunTime.time() >= 90.00 && opModeRunTime.time() <= 120.00) {
+                lighting.setLightPattern(RobotConstants.Lighting.Pattern.kEndgame);
+            }
+            else {
+                lighting.setLightPattern(RobotConstants.Lighting.Pattern.kTeleop);
+            }
+
             // FTC Dashboard
             TelemetryPacket packet = new TelemetryPacket();
             packet.fieldOverlay().setStroke("#3F51B5");
@@ -232,12 +263,41 @@ public class LoadingLaunchZone extends LinearOpMode {
                     .waitSeconds(6.0);
 
             // Path - Move to Shoot - Position One
-            TrajectoryActionBuilder pathStart = drivetrain.actionBuilder(initialPose)
+//            TrajectoryActionBuilder pathStart = drivetrain.actionBuilder(initialPose)
+//                    .splineToLinearHeading(new Pose2d(
+//                             25 * pathAllianceAdjX
+//                            ,20 * pathAllianceAdjY
+//                            , Math.toRadians(RobotConstants.UnitConversion.addTwoDegreeValuesTogether(180, headingAllianceAdj))), Math.PI/2)
+//                    .waitSeconds(0.5);
+
+            TrajectoryActionBuilder pathStart;
+            if (labelAlliance == "blue") {
+                pathStart = drivetrain.actionBuilder(initialPose)
+//                        .splineToLinearHeading(new Pose2d(
+//                                25 * pathAllianceAdjX
+//                                , 20 * pathAllianceAdjY
+//                                , Math.toRadians(RobotConstants.UnitConversion.addTwoDegreeValuesTogether(180, headingAllianceAdj))), Math.PI / 2)
+//                        .strafeTo(new Vector2d(25 * pathAllianceAdjX, 20 * pathAllianceAdjY))
                     .splineToLinearHeading(new Pose2d(
                              25 * pathAllianceAdjX
                             ,20 * pathAllianceAdjY
                             , Math.toRadians(RobotConstants.UnitConversion.addTwoDegreeValuesTogether(180, headingAllianceAdj))), Math.PI/2)
-                    .waitSeconds(0.5);
+                        .waitSeconds(0.5);
+            }
+            else {
+                pathStart = drivetrain.actionBuilder(initialPose)
+//                        .splineToLinearHeading(new Pose2d(
+//                                25 * pathAllianceAdjX
+//                                , 20 * pathAllianceAdjY
+//                                , Math.toRadians(RobotConstants.UnitConversion.addTwoDegreeValuesTogether(180, headingAllianceAdj))), Math.PI / 2)
+                        .splineToLinearHeading(new Pose2d(
+                                25
+                                ,20
+                                , initialPose.heading.real), Math.PI / 2)
+
+
+                        .waitSeconds(0.5);
+            }
 
             // Log start of action(s)
             telemetry.addData("timestamp", "%.1f seconds", opModeRunTime.seconds());
