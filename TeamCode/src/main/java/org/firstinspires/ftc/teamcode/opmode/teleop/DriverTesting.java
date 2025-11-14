@@ -8,19 +8,21 @@ import com.qualcomm.hardware.dfrobot.HuskyLens;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Gamepad;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.Drawing;
+import org.firstinspires.ftc.teamcode.system.drivetrain.DrivetrainMecanum;
 import org.firstinspires.ftc.teamcode.system.drivetrain.DrivetrainPinpoint;
 import org.firstinspires.ftc.teamcode.system.indexer.Indexer;
 import org.firstinspires.ftc.teamcode.system.intake.Intake;
 import org.firstinspires.ftc.teamcode.system.lighting.Lighting;
 import org.firstinspires.ftc.teamcode.system.shooter.Shooter;
-import org.firstinspires.ftc.teamcode.system.drivetrain.DrivetrainMecanum;
 import org.firstinspires.ftc.teamcode.system.sound.Sound;
 import org.firstinspires.ftc.teamcode.system.vision.Vision;
 import org.firstinspires.ftc.teamcode.utility.RobotConstants;
@@ -28,8 +30,8 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 
 import java.util.Locale;
 
-@TeleOp(name="Driver Control", group="_main")
-public class DriverControl extends LinearOpMode {
+@TeleOp(name="Driver Testing", group="_test")
+public class DriverTesting extends LinearOpMode {
 
     // System - Drivetrain
     DrivetrainPinpoint drivetrain = new DrivetrainPinpoint(this);
@@ -242,6 +244,30 @@ public class DriverControl extends LinearOpMode {
 
             vision.telemetryAprilTag();
 
+            // Show joystick information
+            telemetry.addData("-","--------------------------------------");
+            telemetry.addData("-","-- Controller Input");
+            telemetry.addData("-","--------------------------------------");
+            telemetry.addData("main", String.format(Locale.US,"{left X: %.3f, Left Y: %.3f, Right X: %.3f, Right Y: %.3f}", gamepad1.left_stick_x, gamepad1.left_stick_y, gamepad1.right_stick_x, gamepad1.right_stick_y));
+            telemetry.addData("alt", String.format(Locale.US,"{left X: %.3f, Left Y: %.3f, Right X: %.3f, Right Y: %.3f}", gamepad2.left_stick_x, gamepad2.left_stick_y, gamepad2.right_stick_x, gamepad2.right_stick_y));
+            telemetry.addData("trigger", String.format(Locale.US,"{left: %.3f, Right: %.3f}", gamepad2.left_trigger, gamepad2.right_trigger));
+
+            // Shooter
+            telemetry.addData("-","--------------------------------------");
+            telemetry.addData("-","-- Shooting Setting(s)");
+            telemetry.addData("-","--------------------------------------");
+            telemetry.addData("main", String.format(Locale.US,"{left: %.3f, Right: %.3f}", shooterVelocityLeft, shooterVelocityRight));
+            telemetry.addData("P,I,D,F (left)", "%.04f, %.04f, %.04f, %.04f"
+                    , shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft).p
+                    , shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft).i
+                    , shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft).d
+                    , shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft).f);
+            telemetry.addData("P,I,D,F (right)", "%.04f, %.04f, %.04f, %.04f"
+                    , shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight).p
+                    , shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight).i
+                    , shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight).d
+                    , shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight).f);
+
             // ------------------------------------------------------------
             // - send telemetry to driver hub
             // ------------------------------------------------------------
@@ -425,34 +451,33 @@ public class DriverControl extends LinearOpMode {
             // Indexer
             // Operator control
             // ------------------------------------
-//            if(currOperator.dpad_left && !prevOperator.dpad_left) {
-//                if(indexerOutputLeft < 1.0) {
-//                    indexerOutputLeft = indexerOutputLeft + 0.05;
-//                    indexerOutputRight = indexerOutputLeft;
-//                }
-//            }
-//
-//            if(currOperator.dpad_right && !prevOperator.dpad_right) {
-//                if(shooterOutputLeft > 0.0) {
-//                    indexerOutputLeft = indexerOutputLeft - 0.05;
-//                    indexerOutputRight = indexerOutputLeft;
-//                }
-//            }
+            if(currOperator.dpad_left && !prevOperator.dpad_left) {
+                if(indexerOutputLeft < 1.0) {
+                    indexerOutputLeft = indexerOutputLeft + 0.05;
+                    indexerOutputRight = indexerOutputLeft;
+                }
+            }
 
-//            if(currOperator.left_bumper && shooter.checkShooterVelocityLevel(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft, RobotConstants.Shooter.Configuration.kVelocityMin)) {
-//                indexer.activateIndexer(RobotConstants.HardwareConfiguration.kLabelIndexServoLeft, indexerOutputLeft);
-//            }
-//            else {
-//                indexer.deactivateIndexer(RobotConstants.HardwareConfiguration.kLabelIndexServoLeft);
-//            }
-//
-//
-//            if(currOperator.right_bumper && shooter.checkShooterVelocityLevel(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight, RobotConstants.Shooter.Configuration.kVelocityMin)) {
-//                indexer.activateIndexer(RobotConstants.HardwareConfiguration.kLabelIndexServoRight, indexerOutputRight);
-//            }
-//            else {
-//                indexer.deactivateIndexer(RobotConstants.HardwareConfiguration.kLabelIndexServoRight);
-//            }
+            if(currOperator.dpad_right && !prevOperator.dpad_right) {
+                if(shooterOutputLeft > 0.0) {
+                    indexerOutputLeft = indexerOutputLeft - 0.05;
+                    indexerOutputRight = indexerOutputLeft;
+                }
+            }
+
+            if(currOperator.left_bumper && shooter.checkShooterVelocityLevel(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft, RobotConstants.Shooter.Configuration.kVelocityMin)) {
+                indexer.activateIndexer(RobotConstants.HardwareConfiguration.kLabelIndexServoLeft, indexerOutputLeft);
+            }
+            else {
+                indexer.deactivateIndexer(RobotConstants.HardwareConfiguration.kLabelIndexServoLeft);
+            }
+
+            if(currOperator.right_bumper && shooter.checkShooterVelocityLevel(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight, RobotConstants.Shooter.Configuration.kVelocityMin)) {
+                indexer.activateIndexer(RobotConstants.HardwareConfiguration.kLabelIndexServoRight, indexerOutputRight);
+            }
+            else {
+                indexer.deactivateIndexer(RobotConstants.HardwareConfiguration.kLabelIndexServoRight);
+            }
 
             // ------------------------------------
             // Shooter
@@ -472,14 +497,28 @@ public class DriverControl extends LinearOpMode {
                 }
             }
 
+//            if(currOperator.y && !prevOperator.y) {
+//                PIDFCoefficients newGain = new PIDFCoefficients(
+//                          shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft).p
+//                        , shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft).i + 0.1
+//                        , shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft).d
+//                        , shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft).f
+//                    );
+//                shooter.setMotorPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, newGain);
+//            }
+//
+//            if(currOperator.a && !prevOperator.a) {
+//                PIDFCoefficients newGain = new PIDFCoefficients(
+//                        shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft).p
+//                        , shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft).i - 0.1
+//                        , shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft).d
+//                        , shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft).f
+//                );
+//                shooter.setMotorPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, newGain);
+//            }
+
             if(currOperator.left_trigger >= 0.20) {
                 shooter.activateShooterVelocity(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft, shooterVelocityLeft);
-
-                if(shooter.checkShooterVelocityLevel(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft
-                        , RobotConstants.Shooter.Configuration.kVelocityMin)) {
-
-                    indexer.activateIndexer(RobotConstants.HardwareConfiguration.kLabelIndexServoLeft, indexerOutputLeft);
-                }
             }
             else {
                 shooter.deactivateShooter(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft);
@@ -487,12 +526,6 @@ public class DriverControl extends LinearOpMode {
 
             if(currOperator.right_trigger >= 0.20) {
                 shooter.activateShooterVelocity(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight, shooterVelocityRight);
-
-                if(shooter.checkShooterVelocityLevel(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight
-                        , RobotConstants.Shooter.Configuration.kVelocityMin)) {
-
-                    indexer.activateIndexer(RobotConstants.HardwareConfiguration.kLabelIndexServoRight, indexerOutputLeft);
-                }
             }
             else {
                 shooter.deactivateShooter(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight);
@@ -502,9 +535,9 @@ public class DriverControl extends LinearOpMode {
             // Lighting
             // ------------------------------------------------------------
             if(shooter.checkShooterVelocityLevel(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft
-                    , RobotConstants.Shooter.Configuration.kVelocityMin)
+                    , shooterVelocityLeft)
                 || shooter.checkShooterVelocityLevel(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight
-                    , RobotConstants.Shooter.Configuration.kVelocityMin)) {
+                    , shooterVelocityRight)) {
 
                 lighting.setLightPattern(RobotConstants.Lighting.Pattern.kReadyToShoot);
             }
@@ -548,9 +581,9 @@ public class DriverControl extends LinearOpMode {
                     , drivetrain.getDrivetrainMode().getLabel()
                     , drivetrain.getDrivetrainOutputPower().getLabel()));
             telemetry.addData(">", String.format(Locale.US,"{x: %s, y: %s, heading: %s}"
-                    , robotPose.getX(DistanceUnit.INCH)
-                    , robotPose.getY(DistanceUnit.INCH)
-                    , robotPose.getHeading(AngleUnit.DEGREES)));
+                            , robotPose.getX(DistanceUnit.INCH)
+                            , robotPose.getY(DistanceUnit.INCH)
+                            , robotPose.getHeading(AngleUnit.DEGREES)));
             telemetry.addData("-","--------------------------------------");
             telemetry.addData("light mode", lighting.getLightPatternCurrent().toString());
             telemetry.addData("-","--------------------------------------");
@@ -581,27 +614,27 @@ public class DriverControl extends LinearOpMode {
                     , shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight).d
                     , shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight).f);
             telemetry.addData("power"
-                    , String.format(Locale.US,"{left: %.3f, Right: %.3f}"
-                            , shooter.getMotorPower(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft)
-                            , shooter.getMotorPower(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight)));
+                                , String.format(Locale.US,"{left: %.3f, Right: %.3f}"
+                                , shooter.getMotorPower(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft)
+                                , shooter.getMotorPower(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight)));
             telemetry.addData("velocity"
-                    , String.format(Locale.US,"{left: %.3f, Right: %.3f}"
+                            , String.format(Locale.US,"{left: %.3f, Right: %.3f}"
                             , shooter.getMotorVelocity(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft)
                             , shooter.getMotorVelocity(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight)));
 
             // Intake
-            telemetry.addData("-","--------------------------------------");
-            telemetry.addData("-","-- Intake Setting(s)");
-            telemetry.addData("-","--------------------------------------");
-            telemetry.addData("main", String.format(Locale.US,"{left: %.3f, Right: %.3f}", intakeOutputLeft, intakeOutputRight));
-            telemetry.addData("power"
-                    , String.format(Locale.US,"{left: %.3f, Right: %.3f}"
-                            , 0.0
-                            , intake.getMotorPower(RobotConstants.HardwareConfiguration.kLabelIntakeMotorRight)));
-            telemetry.addData("velocity"
-                    , String.format(Locale.US,"{left: %.3f, Right: %.3f}"
-                            , 0.0
-                            , intake.getMotorVelocity(RobotConstants.HardwareConfiguration.kLabelIntakeMotorRight)));
+//            telemetry.addData("-","--------------------------------------");
+//            telemetry.addData("-","-- Intake Setting(s)");
+//            telemetry.addData("-","--------------------------------------");
+//            telemetry.addData("main", String.format(Locale.US,"{left: %.3f, Right: %.3f}", intakeOutputLeft, intakeOutputRight));
+//            telemetry.addData("power"
+//                    , String.format(Locale.US,"{left: %.3f, Right: %.3f}"
+//                            , 0.0
+//                            , intake.getMotorPower(RobotConstants.HardwareConfiguration.kLabelIntakeMotorRight)));
+//            telemetry.addData("velocity"
+//                    , String.format(Locale.US,"{left: %.3f, Right: %.3f}"
+//                            , 0.0
+//                            , intake.getMotorVelocity(RobotConstants.HardwareConfiguration.kLabelIntakeMotorRight)));
 
 
             // Show Arm and Intake Telemetry
@@ -647,6 +680,14 @@ public class DriverControl extends LinearOpMode {
             telemetry.addData("Target ID", detectedAprilTagIds);
 
             vision.telemetryAprilTag();
+
+            // Show joystick information
+            telemetry.addData("-","--------------------------------------");
+            telemetry.addData("-","-- Controller Input");
+            telemetry.addData("-","--------------------------------------");
+            telemetry.addData("main", String.format(Locale.US,"{left X: %.3f, Left Y: %.3f, Right X: %.3f, Right Y: %.3f}", currDriver.left_stick_x, currDriver.left_stick_y, currDriver.right_stick_x, currDriver.right_stick_y));
+            telemetry.addData("alt", String.format(Locale.US,"{left X: %.3f, Left Y: %.3f, Right X: %.3f, Right Y: %.3f}", currOperator.left_stick_x, currOperator.left_stick_y, currOperator.right_stick_x, currOperator.right_stick_y));
+            telemetry.addData("trigger", String.format(Locale.US,"{left: %.3f, Right: %.3f}", currOperator.left_trigger, currOperator.right_trigger));
 
             // ------------------------------------------------------------
             // - send telemetry to driver hub

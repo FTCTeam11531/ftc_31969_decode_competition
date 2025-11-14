@@ -368,9 +368,27 @@ public class RobotConstants {
             public static final double kMotorOutputPowerLow = .50;
             public static final double kMotorOutputPowerSnail = .35;
 
+            public static final double kGainP = 125.0;
+            public static final double kGainI = 0.0;
+            public static final double kGainD = 2.5;
+            public static final double kGainF = 15.5;
+
         }
 
         public static final class Setpoint {
+
+            public static final class Velocity {
+                public static final double kInitial = 1600;
+                public static final double kLongRange = 1600;
+                public static final double kMidRange = 1200;
+                public static final double kCloseRange = 1000;
+
+                public static final double kMaxRange = 1800;
+                public static final double kMinRange = 800;
+
+                public static final double kOffset = 40;
+            }
+
             public static final double kAutoLoadingLaunchZone = 0.80;
             public static final double kAutoDepotLaunchZone = 0.40;
         }
