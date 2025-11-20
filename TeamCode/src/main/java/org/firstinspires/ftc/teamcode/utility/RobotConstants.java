@@ -1,8 +1,13 @@
 package org.firstinspires.ftc.teamcode.utility;
 
 import com.acmerobotics.roadrunner.Pose2d;
+import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.sun.tools.javac.util.Pair;
+
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 
 import kotlin.Triple;
 
@@ -133,6 +138,8 @@ public class RobotConstants {
                 public static final Pair<Integer, String> kBlueLaunchZone = new Pair<>(20, "Blue");
                 public static final Pair<Integer, String> kRedLaunchZone = new Pair<>(24, "Red");
 
+                public static final double kTargetRangeBearingLeft = 5.0;
+                public static final double kTargetRangeBearingRight = -5.0;
             }
 
             public static final class Obelisk {
@@ -244,6 +251,12 @@ public class RobotConstants {
         // Sensor(s)
         public static final String kLabelSensorAllianceTag = "sensor_alliance_tag";
 
+        // Lighting
+        public static final String kLabelLightController = "control_lighting";
+
+        // Kickstand
+        public static final String kLabelServoKickstand = "servo_kickstand";
+
     }
 
     public static final class CommonSettings {
@@ -271,9 +284,9 @@ public class RobotConstants {
 
             // TODO: test and set final speed value(s)
             public static final double kMotorOutputPowerHigh = 1.0;
-            public static final double kMotorOutputPowerMedium = .80;
-            public static final double kMotorOutputPowerLow = .50;
-            public static final double kMotorOutputPowerSnail = .35;
+            public static final double kMotorOutputPowerMedium = 1.0;
+            public static final double kMotorOutputPowerLow = .80;
+            public static final double kMotorOutputPowerSnail = .50;
         }
 
         public static final class Odometry {
@@ -338,7 +351,40 @@ public class RobotConstants {
 
             public static final class Pose {
 
+                public static final Pose2D kRobotStart = new Pose2D(
+                        DistanceUnit.MM
+                        , 0
+                        , 0
+                        , AngleUnit.DEGREES
+                        , 0);
 
+                public static final Pose2D kTargetLaunchZone = new Pose2D(
+                        DistanceUnit.MM
+                        , 0
+                        , 0
+                        , AngleUnit.DEGREES
+                        , 0);
+
+                public static final Pose2D kTargetDepotZone = new Pose2D(
+                        DistanceUnit.MM
+                        , 0
+                        , 0
+                        , AngleUnit.DEGREES
+                        , 0);
+
+                public static final Pose2D kParkAuto = new Pose2D(
+                        DistanceUnit.INCH
+                        , 20
+                        , 20
+                        , AngleUnit.DEGREES
+                        , 90);
+
+                public static final Pose2D kParkTeleop = new Pose2D(
+                        DistanceUnit.MM
+                        , 0
+                        , 0
+                        , AngleUnit.DEGREES
+                        , 0);
 
             }
 
@@ -354,13 +400,39 @@ public class RobotConstants {
 
             public static final double kMotorAchievableMaxRpmFraction = 1.0;
 
+            public static final double kVelocityMin = 1000;
+
             // TODO: test and set final speed value(s)
             public static final double kMotorOutputPowerHigh = 1.0;
             public static final double kMotorOutputPowerMedium = .80;
             public static final double kMotorOutputPowerLow = .50;
             public static final double kMotorOutputPowerSnail = .35;
 
+            public static final double kGainP = 125.0;
+            public static final double kGainI = 0.0;
+            public static final double kGainD = 2.5;
+            public static final double kGainF = 15.5;
+
         }
+
+        public static final class Setpoint {
+
+            public static final class Velocity {
+                public static final double kInitial = 1600;
+                public static final double kLongRange = 1600;
+                public static final double kMidRange = 1200;
+                public static final double kCloseRange = 1000;
+
+                public static final double kMaxRange = 1800;
+                public static final double kMinRange = 800;
+
+                public static final double kOffset = 40;
+            }
+
+            public static final double kAutoLoadingLaunchZone = 0.80;
+            public static final double kAutoDepotLaunchZone = 0.40;
+        }
+
     }
 
     public static final class Intake {
@@ -459,8 +531,8 @@ public class RobotConstants {
              */
             public static final class Pose {
                 public static final double kPositionX = 0;
-                public static final double kPositionY = 7.5;
-                public static final double kPositionZ = 14.0;
+                public static final double kPositionY = -7.75;
+                public static final double kPositionZ = 17.0;
 
                 public static final double kOrientationYaw = 0;
                 public static final double kOrientationPitch = -90;
@@ -476,6 +548,46 @@ public class RobotConstants {
         public static final class AllianceTag {
             public static final boolean kIsLedEnabled = true;
         }
+    }
+
+    public static final class Kickstand {
+
+        public static final class Setpoint {
+            public static final double kMin = 0.150;
+            public static final double kMax = 0.825;
+
+            public static final double kPrelift = 0.250;
+            public static final double kInitial = kMin;
+
+            public static final double kEndgame = 0.50;
+        }
+    }
+
+    public static final class Lighting {
+
+        public static final boolean kEnable = true;
+
+        public static final class Pattern {
+
+            public static final RevBlinkinLedDriver.BlinkinPattern kDefault = RevBlinkinLedDriver.BlinkinPattern.LARSON_SCANNER_GRAY;
+            public static final RevBlinkinLedDriver.BlinkinPattern kTeleop = kDefault;
+            public static final RevBlinkinLedDriver.BlinkinPattern kAutonomous = kDefault;
+            public static final RevBlinkinLedDriver.BlinkinPattern kAutonomousAllianceRed = RevBlinkinLedDriver.BlinkinPattern.HEARTBEAT_RED;
+            public static final RevBlinkinLedDriver.BlinkinPattern kAutonomousAllianceRedHangman = RevBlinkinLedDriver.BlinkinPattern.LIGHT_CHASE_RED;
+            public static final RevBlinkinLedDriver.BlinkinPattern kAutonomousAllianceRedBucket = RevBlinkinLedDriver.BlinkinPattern.SHOT_RED;
+            public static final RevBlinkinLedDriver.BlinkinPattern kAutonomousAllianceBlue = RevBlinkinLedDriver.BlinkinPattern.HEARTBEAT_BLUE;
+            public static final RevBlinkinLedDriver.BlinkinPattern kAutonomousAllianceBlueHangman = RevBlinkinLedDriver.BlinkinPattern.LIGHT_CHASE_BLUE;
+            public static final RevBlinkinLedDriver.BlinkinPattern kAutonomousAllianceBlueBucket = RevBlinkinLedDriver.BlinkinPattern.SHOT_BLUE;
+
+            public static final RevBlinkinLedDriver.BlinkinPattern kEndgame = RevBlinkinLedDriver.BlinkinPattern.BREATH_RED;
+            public static final RevBlinkinLedDriver.BlinkinPattern kEnd = RevBlinkinLedDriver.BlinkinPattern.BREATH_RED;
+
+            public static final RevBlinkinLedDriver.BlinkinPattern kReadyToShoot = RevBlinkinLedDriver.BlinkinPattern.RAINBOW_WITH_GLITTER;
+            public static final RevBlinkinLedDriver.BlinkinPattern kOnTarget = RevBlinkinLedDriver.BlinkinPattern.COLOR_WAVES_FOREST_PALETTE;
+
+        }
+
+
     }
 
 }

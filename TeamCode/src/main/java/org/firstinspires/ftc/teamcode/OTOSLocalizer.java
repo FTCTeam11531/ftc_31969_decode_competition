@@ -48,7 +48,6 @@ public class OTOSLocalizer implements Localizer {
         otos.resetTracking();
     }
 
-
     @Override
     public Pose2d getPose() {
         return currentPose;

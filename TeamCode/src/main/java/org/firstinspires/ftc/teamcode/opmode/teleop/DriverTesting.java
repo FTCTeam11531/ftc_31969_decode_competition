@@ -5,23 +5,25 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.qualcomm.hardware.dfrobot.HuskyLens;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Gamepad;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.Drawing;
+import org.firstinspires.ftc.teamcode.system.drivetrain.DrivetrainMecanum;
 import org.firstinspires.ftc.teamcode.system.drivetrain.DrivetrainPinpoint;
 import org.firstinspires.ftc.teamcode.system.indexer.Indexer;
 import org.firstinspires.ftc.teamcode.system.intake.Intake;
-import org.firstinspires.ftc.teamcode.system.kickstand.Kickstand;
 import org.firstinspires.ftc.teamcode.system.lighting.Lighting;
 import org.firstinspires.ftc.teamcode.system.shooter.Shooter;
-import org.firstinspires.ftc.teamcode.system.drivetrain.DrivetrainMecanum;
 import org.firstinspires.ftc.teamcode.system.sound.Sound;
 import org.firstinspires.ftc.teamcode.system.vision.Vision;
 import org.firstinspires.ftc.teamcode.utility.RobotConstants;
@@ -29,8 +31,9 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 
 import java.util.Locale;
 
-@TeleOp(name="Driver Control", group="_main")
-public class DriverControl extends LinearOpMode {
+@Disabled
+@TeleOp(name="Driver Testing", group="_test")
+public class DriverTesting extends LinearOpMode {
 
     // System - Drivetrain
     DrivetrainPinpoint drivetrain = new DrivetrainPinpoint(this);
@@ -53,8 +56,6 @@ public class DriverControl extends LinearOpMode {
     // System - Lighting
     Lighting lighting = new Lighting(this);
 
-    // System - Kickstand
-    Kickstand kickstand = new Kickstand(this);
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -64,7 +65,6 @@ public class DriverControl extends LinearOpMode {
         // -------------------------------------------------
         ElapsedTime opModeRunTime = new ElapsedTime();
         Pose2D initialPose = new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.DEGREES, 0);
-        Pose2D robotPose;
 
         Gamepad currDriver = new Gamepad();
         Gamepad currOperator = new Gamepad();
@@ -76,8 +76,7 @@ public class DriverControl extends LinearOpMode {
                 , shooterVelocityLeft = RobotConstants.Shooter.Setpoint.Velocity.kLongRange
                 , shooterVelocityRight = RobotConstants.Shooter.Setpoint.Velocity.kLongRange
                 , intakeOutputLeft = 0.80, intakeOutputRight = 0.80
-                , indexerOutputLeft = 1.0, indexerOutputRight = 1.0
-                , kickstandPosition = RobotConstants.Kickstand.Setpoint.kInitial;
+                , indexerOutputLeft = 1.0, indexerOutputRight = 1.0;
 
         HuskyLens.Block[] listTargetAIObjects = null;
         HuskyLens.Block targetAIObject = null;
@@ -115,10 +114,6 @@ public class DriverControl extends LinearOpMode {
 
         // System - Lighting
         lighting.init();
-
-        // System - Kickstand
-        kickstand.init();
-        kickstandPosition = RobotConstants.Kickstand.Setpoint.kMax;
 
         // -- Configuration - Get Initial Pose for Drivetrain
         if(vision.getDetectedAllianceColor().equals("blue")) {
@@ -159,7 +154,7 @@ public class DriverControl extends LinearOpMode {
                 drivetrain.setRobotPose(visionPose);
             }
 
-            robotPose = drivetrain.getRobotPose();
+            Pose2D robotPose = drivetrain.getRobotPose();
 
             // Update Odometry Reading(s)
             drivetrain.updateOdometry();
@@ -251,16 +246,48 @@ public class DriverControl extends LinearOpMode {
 
             vision.telemetryAprilTag();
 
+            // Show joystick information
+            telemetry.addData("-","--------------------------------------");
+            telemetry.addData("-","-- Controller Input");
+            telemetry.addData("-","--------------------------------------");
+            telemetry.addData("main", String.format(Locale.US,"{left X: %.3f, Left Y: %.3f, Right X: %.3f, Right Y: %.3f}", gamepad1.left_stick_x, gamepad1.left_stick_y, gamepad1.right_stick_x, gamepad1.right_stick_y));
+            telemetry.addData("alt", String.format(Locale.US,"{left X: %.3f, Left Y: %.3f, Right X: %.3f, Right Y: %.3f}", gamepad2.left_stick_x, gamepad2.left_stick_y, gamepad2.right_stick_x, gamepad2.right_stick_y));
+            telemetry.addData("trigger", String.format(Locale.US,"{left: %.3f, Right: %.3f}", gamepad2.left_trigger, gamepad2.right_trigger));
+
+            // Shooter
+            telemetry.addData("-","--------------------------------------");
+            telemetry.addData("-","-- Shooting Setting(s)");
+            telemetry.addData("-","--------------------------------------");
+            telemetry.addData("main", String.format(Locale.US,"{left: %.3f, Right: %.3f}", shooterVelocityLeft, shooterVelocityRight));
+            telemetry.addData("P,I,D,F (left)", "%.04f, %.04f, %.04f, %.04f"
+                    , shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft).p
+                    , shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft).i
+                    , shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft).d
+                    , shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft).f);
+            telemetry.addData("P,I,D,F (right)", "%.04f, %.04f, %.04f, %.04f"
+                    , shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight).p
+                    , shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight).i
+                    , shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight).d
+                    , shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight).f);
+
             // ------------------------------------------------------------
             // - send telemetry to driver hub
             // ------------------------------------------------------------
             telemetry.update();
             idle();
 
+
             // ------------------------------------------------------------
             // Lighting
             // ------------------------------------------------------------
-            if(vision.checkTargetBearing()) {
+            if(shooter.checkShooterVelocityLevel(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft
+                    , RobotConstants.Shooter.Configuration.kVelocityMin)
+                    || shooter.checkShooterVelocityLevel(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight
+                    , RobotConstants.Shooter.Configuration.kVelocityMin)) {
+
+                lighting.setLightPattern(RobotConstants.Lighting.Pattern.kReadyToShoot);
+            }
+            else if(vision.checkTargetBearing()) {
                 lighting.setLightPattern(RobotConstants.Lighting.Pattern.kOnTarget);
             }
             else {
@@ -336,33 +363,23 @@ public class DriverControl extends LinearOpMode {
             // -- robot orientation to field
             // -- installed direction of control hub
             // -- orientation of drivetrain/motors
-//            if (vision.getDetectedLocalization() != null) {
-//                localizationData = vision.getDetectedLocalization();
-//
-//                Pose2D visionPose = new Pose2D(DistanceUnit.INCH
-//                        , Math.round(localizationData.robotPose.getPosition().x)
-//                        , Math.round(localizationData.robotPose.getPosition().y)
-//                        , AngleUnit.DEGREES
-//                        , Math.round(localizationData.robotPose.getOrientation().getYaw(AngleUnit.DEGREES)));
-//
-//                drivetrain.setRobotPose(visionPose);
-//            }
-//
-            robotPose = drivetrain.getRobotPose();
+            Pose2D robotPose = drivetrain.getRobotPose();
+
+            inputAxial = -(currDriver.left_stick_y);
+            inputLateral = (currDriver.left_stick_x);
+            inputYaw =  (currDriver.right_stick_x);
+
+//            Vector2d inputAdjustment = new Vector2d(
+//                      inputAxial
+//                    , inputLateral
+//            ).
+//            ).angleCast(poseRobot.heading.inverse());
+
+
 
             // Update Odometry Reading(s)
             drivetrain.updateOdometry();
-
-            if(kickstand.getKickstandPosition() >= RobotConstants.Kickstand.Setpoint.kPrelift) {
-                inputAxial = 0;
-                inputLateral = 0;
-                inputYaw = 0;
-            }
-            else {
-                inputAxial = -(currDriver.left_stick_y);
-                inputLateral = (currDriver.left_stick_x);
-                inputYaw = (currDriver.right_stick_x);
-            }
+//            drivetrain.updatePoseEstimate();
 
             // Endgame Notification
 //            if(opModeRunTime.time() >= RobotConstants.CommonSettings.GameSettings.kEndgameStartTime && opModeRunTime.time() <= RobotConstants.CommonSettings.GameSettings.kEndgameEndTime) {
@@ -373,15 +390,15 @@ public class DriverControl extends LinearOpMode {
 //            }
 
             // Drivetrain Type determined by 'Drivetrain Mode' enumeration selection (Default to Field Centric)
-            if(drivetrain.getDrivetrainMode().equals(DrivetrainPinpoint.DrivetrainMode.ROBOT_CENTRIC)) {
+            if(drivetrain.getDrivetrainMode().equals(DrivetrainMecanum.DrivetrainMode.ROBOT_CENTRIC)) {
 
                 // Set Robot Centric Drivetrain
                 drivetrain.driveMecanum(inputAxial, inputLateral, inputYaw, drivetrain.getDrivetrainOutputPower().getValue());
             }
             else {
 
-                // Set Field Centric Drivetrain
-                drivetrain.driveMecanumFieldCentric(inputAxial, inputLateral, inputYaw, drivetrain.getDrivetrainOutputPower().getValue());
+            // Set Field Centric Drivetrain
+            drivetrain.driveMecanumFieldCentric(inputAxial, inputLateral, inputYaw, drivetrain.getDrivetrainOutputPower().getValue());
             }
 
             // ------------------------------------
@@ -418,27 +435,27 @@ public class DriverControl extends LinearOpMode {
                 drivetrain.setDrivetrainMode(DrivetrainPinpoint.DrivetrainMode.FIELD_CENTRIC);
             }
 
-            if(currDriver.start && currDriver.dpad_down) {
-                drivetrain.setDrivetrainMode(DrivetrainPinpoint.DrivetrainMode.ROBOT_CENTRIC);
-            }
+//            if(currDriver.start && currDriver.dpad_down) {
+//                drivetrain.setDrivetrainMode(DrivetrainMecanum.DrivetrainMode.ROBOT_CENTRIC);
+//            }
 
             // ------------------------------------
             // Intake
             // Driver Control
             // ------------------------------------
-//            if(currDriver.dpad_up && !prevDriver.dpad_up) {
-//                if(intakeOutputLeft < 1.0) {
-//                    intakeOutputLeft = intakeOutputLeft + 0.05;
-//                    intakeOutputRight = intakeOutputLeft;
-//                }
-//            }
-//
-//            if(currDriver.dpad_down && !prevDriver.dpad_down) {
-//                if(intakeOutputLeft > 0.0) {
-//                    intakeOutputLeft = intakeOutputLeft - 0.05;
-//                    intakeOutputRight = intakeOutputLeft;
-//                }
-//            }
+            if(currDriver.dpad_up && !prevDriver.dpad_up) {
+                if(intakeOutputLeft < 1.0) {
+                    intakeOutputLeft = intakeOutputLeft + 0.05;
+                    intakeOutputRight = intakeOutputLeft;
+                }
+            }
+
+            if(currDriver.dpad_down && !prevDriver.dpad_down) {
+                if(intakeOutputLeft > 0.0) {
+                    intakeOutputLeft = intakeOutputLeft - 0.05;
+                    intakeOutputRight = intakeOutputLeft;
+                }
+            }
 
             if(currDriver.left_trigger >= 0.20) {
                 intake.activateIntake(intakeOutputRight);
@@ -454,34 +471,33 @@ public class DriverControl extends LinearOpMode {
             // Indexer
             // Operator control
             // ------------------------------------
-//            if(currOperator.dpad_left && !prevOperator.dpad_left) {
-//                if(indexerOutputLeft < 1.0) {
-//                    indexerOutputLeft = indexerOutputLeft + 0.05;
-//                    indexerOutputRight = indexerOutputLeft;
-//                }
-//            }
-//
-//            if(currOperator.dpad_right && !prevOperator.dpad_right) {
-//                if(shooterOutputLeft > 0.0) {
-//                    indexerOutputLeft = indexerOutputLeft - 0.05;
-//                    indexerOutputRight = indexerOutputLeft;
-//                }
-//            }
+            if(currOperator.dpad_left && !prevOperator.dpad_left) {
+                if(indexerOutputLeft < 1.0) {
+                    indexerOutputLeft = indexerOutputLeft + 0.05;
+                    indexerOutputRight = indexerOutputLeft;
+                }
+            }
 
-//            if(currOperator.left_bumper && shooter.checkShooterVelocityLevel(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft, RobotConstants.Shooter.Configuration.kVelocityMin)) {
-//                indexer.activateIndexer(RobotConstants.HardwareConfiguration.kLabelIndexServoLeft, indexerOutputLeft);
-//            }
-//            else {
-//                indexer.deactivateIndexer(RobotConstants.HardwareConfiguration.kLabelIndexServoLeft);
-//            }
-//
-//
-//            if(currOperator.right_bumper && shooter.checkShooterVelocityLevel(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight, RobotConstants.Shooter.Configuration.kVelocityMin)) {
-//                indexer.activateIndexer(RobotConstants.HardwareConfiguration.kLabelIndexServoRight, indexerOutputRight);
-//            }
-//            else {
-//                indexer.deactivateIndexer(RobotConstants.HardwareConfiguration.kLabelIndexServoRight);
-//            }
+            if(currOperator.dpad_right && !prevOperator.dpad_right) {
+                if(shooterOutputLeft > 0.0) {
+                    indexerOutputLeft = indexerOutputLeft - 0.05;
+                    indexerOutputRight = indexerOutputLeft;
+                }
+            }
+
+            if(currOperator.left_bumper && shooter.checkShooterVelocityLevel(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft, RobotConstants.Shooter.Configuration.kVelocityMin)) {
+                indexer.activateIndexer(RobotConstants.HardwareConfiguration.kLabelIndexServoLeft, indexerOutputLeft);
+            }
+            else {
+                indexer.deactivateIndexer(RobotConstants.HardwareConfiguration.kLabelIndexServoLeft);
+            }
+
+            if(currOperator.right_bumper && shooter.checkShooterVelocityLevel(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight, RobotConstants.Shooter.Configuration.kVelocityMin)) {
+                indexer.activateIndexer(RobotConstants.HardwareConfiguration.kLabelIndexServoRight, indexerOutputRight);
+            }
+            else {
+                indexer.deactivateIndexer(RobotConstants.HardwareConfiguration.kLabelIndexServoRight);
+            }
 
             // ------------------------------------
             // Shooter
@@ -501,42 +517,38 @@ public class DriverControl extends LinearOpMode {
                 }
             }
 
+//            if(currOperator.y && !prevOperator.y) {
+//                PIDFCoefficients newGain = new PIDFCoefficients(
+//                          shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft).p
+//                        , shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft).i + 0.1
+//                        , shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft).d
+//                        , shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft).f
+//                    );
+//                shooter.setMotorPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, newGain);
+//            }
+//
+//            if(currOperator.a && !prevOperator.a) {
+//                PIDFCoefficients newGain = new PIDFCoefficients(
+//                        shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft).p
+//                        , shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft).i - 0.1
+//                        , shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft).d
+//                        , shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft).f
+//                );
+//                shooter.setMotorPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, newGain);
+//            }
+
             if(currOperator.left_trigger >= 0.20) {
                 shooter.activateShooterVelocity(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft, shooterVelocityLeft);
-
-                if(shooter.checkShooterVelocityLevel(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft
-                        , shooterVelocityLeft)) {
-
-                    indexer.activateIndexer(RobotConstants.HardwareConfiguration.kLabelIndexServoLeft, indexerOutputLeft);
-                }
-            }
-            else if(currOperator.left_bumper) {
-                shooter.activateShooterVelocity(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft, -RobotConstants.Shooter.Setpoint.Velocity.kMinRange);
-                indexer.activateIndexer(RobotConstants.HardwareConfiguration.kLabelIndexServoLeft, -indexerOutputLeft);
-                intake.activateIntake(-intakeOutputRight);
             }
             else {
                 shooter.deactivateShooter(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft);
-                indexer.deactivateIndexer(RobotConstants.HardwareConfiguration.kLabelIndexServoLeft);
             }
 
             if(currOperator.right_trigger >= 0.20) {
                 shooter.activateShooterVelocity(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight, shooterVelocityRight);
-
-                if(shooter.checkShooterVelocityLevel(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight
-                        , shooterVelocityRight)) {
-
-                    indexer.activateIndexer(RobotConstants.HardwareConfiguration.kLabelIndexServoRight, indexerOutputLeft);
-                }
-            }
-            else if(currOperator.right_bumper) {
-                shooter.activateShooterVelocity(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight, -RobotConstants.Shooter.Setpoint.Velocity.kMinRange);
-                indexer.activateIndexer(RobotConstants.HardwareConfiguration.kLabelIndexServoRight, -indexerOutputLeft);
-                intake.activateIntake(-intakeOutputRight);
             }
             else {
                 shooter.deactivateShooter(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight);
-                indexer.deactivateIndexer(RobotConstants.HardwareConfiguration.kLabelIndexServoRight);
             }
 
             // ------------------------------------------------------------
@@ -562,25 +574,8 @@ public class DriverControl extends LinearOpMode {
             // ------------------------------------------------------------
             // Endgame
             // ------------------------------------------------------------
-            if(currDriver.dpad_up && !prevDriver.dpad_up) {
-                if(kickstandPosition < 1.0) {
-                    kickstandPosition = kickstandPosition + 0.05;
-                }
-            }
 
-            if(currDriver.dpad_down && !prevDriver.dpad_down) {
-                if(kickstandPosition > 0.0) {
-                    kickstandPosition = kickstandPosition - 0.05;
-                }
-            }
 
-            if(currDriver.a && currOperator.a) {
-                kickstand.setKickstandPosition(kickstandPosition);
-            }
-
-            if(currDriver.b && currOperator.b) {
-                kickstand.setKickstandPosition(RobotConstants.Kickstand.Setpoint.kInitial);
-            }
 
             // ------------------------------------
             // Override
@@ -606,9 +601,9 @@ public class DriverControl extends LinearOpMode {
                     , drivetrain.getDrivetrainMode().getLabel()
                     , drivetrain.getDrivetrainOutputPower().getLabel()));
             telemetry.addData(">", String.format(Locale.US,"{x: %s, y: %s, heading: %s}"
-                    , robotPose.getX(DistanceUnit.INCH)
-                    , robotPose.getY(DistanceUnit.INCH)
-                    , robotPose.getHeading(AngleUnit.DEGREES)));
+                            , robotPose.getX(DistanceUnit.INCH)
+                            , robotPose.getY(DistanceUnit.INCH)
+                            , robotPose.getHeading(AngleUnit.DEGREES)));
             telemetry.addData("-","--------------------------------------");
             telemetry.addData("light mode", lighting.getLightPatternCurrent().toString());
             telemetry.addData("-","--------------------------------------");
@@ -639,27 +634,27 @@ public class DriverControl extends LinearOpMode {
                     , shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight).d
                     , shooter.getShooterPIDFCoefficient(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight).f);
             telemetry.addData("power"
-                    , String.format(Locale.US,"{left: %.3f, Right: %.3f}"
-                            , shooter.getMotorPower(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft)
-                            , shooter.getMotorPower(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight)));
+                                , String.format(Locale.US,"{left: %.3f, Right: %.3f}"
+                                , shooter.getMotorPower(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft)
+                                , shooter.getMotorPower(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight)));
             telemetry.addData("velocity"
-                    , String.format(Locale.US,"{left: %.3f, Right: %.3f}"
+                            , String.format(Locale.US,"{left: %.3f, Right: %.3f}"
                             , shooter.getMotorVelocity(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft)
                             , shooter.getMotorVelocity(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight)));
 
             // Intake
-            telemetry.addData("-","--------------------------------------");
-            telemetry.addData("-","-- Intake Setting(s)");
-            telemetry.addData("-","--------------------------------------");
-            telemetry.addData("main", String.format(Locale.US,"{left: %.3f, Right: %.3f}", intakeOutputLeft, intakeOutputRight));
-            telemetry.addData("power"
-                    , String.format(Locale.US,"{left: %.3f, Right: %.3f}"
-                            , 0.0
-                            , intake.getMotorPower(RobotConstants.HardwareConfiguration.kLabelIntakeMotorRight)));
-            telemetry.addData("velocity"
-                    , String.format(Locale.US,"{left: %.3f, Right: %.3f}"
-                            , 0.0
-                            , intake.getMotorVelocity(RobotConstants.HardwareConfiguration.kLabelIntakeMotorRight)));
+//            telemetry.addData("-","--------------------------------------");
+//            telemetry.addData("-","-- Intake Setting(s)");
+//            telemetry.addData("-","--------------------------------------");
+//            telemetry.addData("main", String.format(Locale.US,"{left: %.3f, Right: %.3f}", intakeOutputLeft, intakeOutputRight));
+//            telemetry.addData("power"
+//                    , String.format(Locale.US,"{left: %.3f, Right: %.3f}"
+//                            , 0.0
+//                            , intake.getMotorPower(RobotConstants.HardwareConfiguration.kLabelIntakeMotorRight)));
+//            telemetry.addData("velocity"
+//                    , String.format(Locale.US,"{left: %.3f, Right: %.3f}"
+//                            , 0.0
+//                            , intake.getMotorVelocity(RobotConstants.HardwareConfiguration.kLabelIntakeMotorRight)));
 
 
             // Show Arm and Intake Telemetry
@@ -699,20 +694,20 @@ public class DriverControl extends LinearOpMode {
 //                telemetry.addData("Target left:", targetAIObject.left);
 //            }
 
-            // Intake
-            telemetry.addData("-","--------------------------------------");
-            telemetry.addData("-","-- Kickstand");
-            telemetry.addData("-","--------------------------------------");
-            telemetry.addData("main", String.format(Locale.US,"{current: %.3f, setpoint: %.3f}", kickstand.getKickstandPosition(), kickstandPosition));
-
-
-
             telemetry.addData("-", "------------------------------");
             telemetry.addData("-", "-- Detected April Tag ID    --");
             telemetry.addData("-", "------------------------------");
             telemetry.addData("Target ID", detectedAprilTagIds);
 
             vision.telemetryAprilTag();
+
+            // Show joystick information
+            telemetry.addData("-","--------------------------------------");
+            telemetry.addData("-","-- Controller Input");
+            telemetry.addData("-","--------------------------------------");
+            telemetry.addData("main", String.format(Locale.US,"{left X: %.3f, Left Y: %.3f, Right X: %.3f, Right Y: %.3f}", currDriver.left_stick_x, currDriver.left_stick_y, currDriver.right_stick_x, currDriver.right_stick_y));
+            telemetry.addData("alt", String.format(Locale.US,"{left X: %.3f, Left Y: %.3f, Right X: %.3f, Right Y: %.3f}", currOperator.left_stick_x, currOperator.left_stick_y, currOperator.right_stick_x, currOperator.right_stick_y));
+            telemetry.addData("trigger", String.format(Locale.US,"{left: %.3f, Right: %.3f}", currOperator.left_trigger, currOperator.right_trigger));
 
             // ------------------------------------------------------------
             // - send telemetry to driver hub

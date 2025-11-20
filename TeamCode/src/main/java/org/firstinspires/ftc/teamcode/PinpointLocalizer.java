@@ -57,9 +57,13 @@ public final class PinpointLocalizer implements Localizer {
         driver.resetPosAndIMU();
     }
 
+    // TODO: REMOVE THE INVERSE!!!! (need to test)
+    // Try direct set from input pose
     @Override
     public void setPose(Pose2d pose) {
-        txWorldPinpoint = pose.times(txPinpointRobot.inverse());
+         txWorldPinpoint = pose.times(txPinpointRobot.inverse());
+//        txWorldPinpoint = pose.times(txPinpointRobot);
+        txWorldPinpoint = pose;
     }
 
     @Override

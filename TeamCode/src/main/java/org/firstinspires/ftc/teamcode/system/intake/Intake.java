@@ -125,23 +125,42 @@ public class Intake {
     // Get Methods
     // ----------------------------------------------
 
-    public double getIntakePower(String hardwareLabel) {
-        double intakePower;
+    public double getMotorPower(String hardwareLabel) {
+        double outputPower;
 
         switch (hardwareLabel) {
             case RobotConstants.HardwareConfiguration.kLabelIntakeMotorLeft:
-                intakePower = intakeLeft.getPower();
+                outputPower = intakeLeft.getPower();
                 break;
 
             case RobotConstants.HardwareConfiguration.kLabelIntakeMotorRight:
-                intakePower = intakeRight.getPower();
+                outputPower = intakeRight.getPower();
                 break;
 
             default:
-                intakePower = 0;
+                outputPower = 0;
         }
 
-        return intakePower;
+        return outputPower;
+    }
+
+    public double getMotorVelocity(String hardwareLabel) {
+        double outputVelocity;
+
+        switch (hardwareLabel) {
+            case RobotConstants.HardwareConfiguration.kLabelIntakeMotorLeft:
+                outputVelocity = intakeLeft.getVelocity();
+                break;
+
+            case RobotConstants.HardwareConfiguration.kLabelIntakeMotorRight:
+                outputVelocity = intakeRight.getVelocity();
+                break;
+
+            default:
+                outputVelocity = 0;
+        }
+
+        return outputVelocity;
     }
 
 //    public Shooter.ShootingMode getShootingModeLeft() {

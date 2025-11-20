@@ -65,7 +65,7 @@ public class Vision {
     public void init() {
 
         // Camera
-        cameraAIFront = opMode.hardwareMap.get(HuskyLens.class, RobotConstants.HardwareConfiguration.kLabelCameraAIFront);
+//        cameraAIFront = opMode.hardwareMap.get(HuskyLens.class, RobotConstants.HardwareConfiguration.kLabelCameraAIFront);
         cameraAprilTag = opMode.hardwareMap.get(WebcamName.class, RobotConstants.HardwareConfiguration.kLabelCameraAprilTag);
         cameraStream = OpenCvCameraFactory.getInstance().createWebcam(opMode.hardwareMap.get(WebcamName.class, RobotConstants.HardwareConfiguration.kLabelCameraAprilTag));
 
@@ -81,15 +81,15 @@ public class Vision {
 //        sensorAllianceTag.enableLed(RobotConstants.Sensors.AllianceTag.kIsLedEnabled);
 
         // Configure Camera(s)
-        if(!cameraAIFront.knock()) {
-            opMode.telemetry.addData(">", " ERROR: Cannot communicate with " + cameraAIFront.getDeviceName());
-        }
-        else {
-            opMode.telemetry.addData(">", " AI Camera Initialized");
-        }
+//        if(!cameraAIFront.knock()) {
+//            opMode.telemetry.addData(">", " ERROR: Cannot communicate with " + cameraAIFront.getDeviceName());
+//        }
+//        else {
+//            opMode.telemetry.addData(">", " AI Camera Initialized");
+//        }
 
         // Initialize in April Tag Mode
-        setAICameraMode(RobotConstants.Vision.HuskyLens.kLabelCameraModeAprilTag);
+//        setAICameraMode(RobotConstants.Vision.HuskyLens.kLabelCameraModeAprilTag);
 
 //        opMode.telemetry.addData("Alliance Color", getDetectedAllianceTagColor());
 
@@ -172,6 +172,10 @@ public class Vision {
                             detection.robotPose.getOrientation().getPitch(AngleUnit.DEGREES),
                             detection.robotPose.getOrientation().getRoll(AngleUnit.DEGREES),
                             detection.robotPose.getOrientation().getYaw(AngleUnit.DEGREES)));
+                    opMode.telemetry.addLine(String.format("Range, Bearing, Elevation: %6.1f, %6.1f, %6.1f",
+                            detection.ftcPose.range,
+                            detection.ftcPose.bearing,
+                            detection.ftcPose.elevation));
                 }
             } else {
                 opMode.telemetry.addLine(String.format("\n==== (ID %d) Unknown", detection.id));
@@ -185,6 +189,21 @@ public class Vision {
 
     }   // end method telemetryAprilTag()
 
+    public boolean checkTargetBearing() {
+        boolean isOnTarget = false;
+        AprilTagDetection targetDetection = getDetectedLocalization();
+
+        if(targetDetection != null) {
+            if(targetDetection.metadata != null) {
+                if(targetDetection.ftcPose.bearing >= RobotConstants.GameElements.AprilTag.Localization.kTargetRangeBearingRight &&
+                        targetDetection.ftcPose.bearing <= RobotConstants.GameElements.AprilTag.Localization.kTargetRangeBearingLeft) {
+                    isOnTarget = true;
+                }
+            }
+        }
+
+        return isOnTarget;
+    }
 
     // -----------------------------------------
     // Get Method(s)
@@ -280,15 +299,22 @@ public class Vision {
         return pattern;
     }
 
-    public String getDetectedAllianceTagColor() {
+    public String getDetectedAllianceColor() {
         String detectedColor;
+        AprilTagDetection detectedLocalization = getDetectedLocalization();
 
-        if(sensorAllianceTag.blue() > sensorAllianceTag.red()) {
-            detectedColor = "blue";
+        if (detectedLocalization != null) {
+            if(detectedLocalization.robotPose.getPosition().y < 0) {
+                detectedColor = "blue";
+            }
+            else {
+                detectedColor = "red";
+            }
         }
         else {
-            detectedColor = "red";
+            detectedColor = "unknown";
         }
+
 
         return detectedColor;
     }
