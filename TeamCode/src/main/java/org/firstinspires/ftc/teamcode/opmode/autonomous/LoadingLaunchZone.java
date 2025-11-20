@@ -14,6 +14,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.Drawing;
 import org.firstinspires.ftc.teamcode.Localizer;
 import org.firstinspires.ftc.teamcode.system.drivetrain.DrivetrainMecanum;
@@ -68,6 +69,8 @@ public class LoadingLaunchZone extends LinearOpMode {
         AprilTagDetection localizationData = null;
 
         String labelAlliance;
+
+        Pose2d robotPose;
 
 
         // Setup Telemetry
@@ -143,7 +146,7 @@ public class LoadingLaunchZone extends LinearOpMode {
 
             }
 
-            Pose2d robotPose = drivetrain.localizer.getPose();
+            robotPose = drivetrain.localizer.getPose();
 
             // Set Initial Pose to robot pose to be used when active
             initialPose = robotPose;
@@ -278,10 +281,12 @@ public class LoadingLaunchZone extends LinearOpMode {
 //                                , 20 * pathAllianceAdjY
 //                                , Math.toRadians(RobotConstants.UnitConversion.addTwoDegreeValuesTogether(180, headingAllianceAdj))), Math.PI / 2)
 //                        .strafeTo(new Vector2d(25 * pathAllianceAdjX, 20 * pathAllianceAdjY))
-                    .splineToLinearHeading(new Pose2d(
-                             25 * pathAllianceAdjX
-                            ,20 * pathAllianceAdjY
-                            , Math.toRadians(RobotConstants.UnitConversion.addTwoDegreeValuesTogether(180, headingAllianceAdj))), Math.PI/2)
+//                    .splineToLinearHeading(new Pose2d(
+//                             25 //* pathAllianceAdjX
+//                            ,20 //* pathAllianceAdjY
+//                            , Math.toRadians(RobotConstants.UnitConversion.addTwoDegreeValuesTogether(180, headingAllianceAdj))), Math.PI/2)
+                        .strafeTo(new Vector2d(20, 20))
+
                         .waitSeconds(0.5);
             }
             else {
@@ -290,10 +295,12 @@ public class LoadingLaunchZone extends LinearOpMode {
 //                                25 * pathAllianceAdjX
 //                                , 20 * pathAllianceAdjY
 //                                , Math.toRadians(RobotConstants.UnitConversion.addTwoDegreeValuesTogether(180, headingAllianceAdj))), Math.PI / 2)
-                        .splineToLinearHeading(new Pose2d(
-                                25
-                                ,20
-                                , initialPose.heading.real), Math.PI / 2)
+//                        .splineToLinearHeading(new Pose2d(
+//                                25
+//                                ,20
+//                                , initialPose.heading.real), Math.PI / 2)
+//                        .lineToY(20)
+                        .strafeTo(new Vector2d(20, -20))
 
 
                         .waitSeconds(0.5);
@@ -322,8 +329,8 @@ public class LoadingLaunchZone extends LinearOpMode {
                                     , waitPeriodSecondsThree.build()
                             )
                             , waitPeriodSecondsThree.build()
+                            , waitPeriodSecondsHalf.build()
 
-//                            , waitPeriodSecondsHalf.build()
                             , new ParallelAction(
                                 shooter.actionActivateShooter(
                                         RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft

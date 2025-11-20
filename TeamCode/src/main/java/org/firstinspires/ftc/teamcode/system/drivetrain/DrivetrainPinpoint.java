@@ -89,12 +89,40 @@ public class DrivetrainPinpoint {
         public abstract String getLabel();
     }
 
+    public enum RobotStateDrive {
+        RobotStart {
+            @Override
+            public Pose2D getValue() { return RobotConstants.Drivetrain.Autonomous.Pose.kRobotStart; }
+        },
+        TargetLaunchZone {
+            @Override
+            public Pose2D getValue() { return RobotConstants.Drivetrain.Autonomous.Pose.kTargetLaunchZone; }
+        },
+        TargetDepotZone {
+            @Override
+            public Pose2D getValue() { return RobotConstants.Drivetrain.Autonomous.Pose.kTargetDepotZone; }
+        },
+        ParkAuto {
+            @Override
+            public Pose2D getValue() { return RobotConstants.Drivetrain.Autonomous.Pose.kParkAuto; }
+        },
+
+        ParkTeleop {
+            @Override
+            public Pose2D getValue() { return RobotConstants.Drivetrain.Autonomous.Pose.kParkTeleop; }
+        };
+
+        public abstract Pose2D getValue();
+    }
+
+
+
     // System Opmode - Calling opmode
     private LinearOpMode opMode;
 
     // Drivetrain Settings
-    private DrivetrainMecanum.DrivetrainMode drivetrainMode = DrivetrainMecanum.DrivetrainMode.FIELD_CENTRIC;
-    private DrivetrainMecanum.DrivetrainSpeed drivetrainSpeed = DrivetrainMecanum.DrivetrainSpeed.MEDIUM;
+    private DrivetrainPinpoint.DrivetrainMode drivetrainMode = DrivetrainPinpoint.DrivetrainMode.FIELD_CENTRIC;
+    private DrivetrainPinpoint.DrivetrainSpeed drivetrainSpeed = DrivetrainPinpoint.DrivetrainSpeed.MEDIUM;
 
 
     // Drivetrain Setting(s)
@@ -105,8 +133,7 @@ public class DrivetrainPinpoint {
     private List<DcMotorEx> listMotorDrivetrain;
 
     private GoBildaPinpointDriver imu_pinpoint;
-
-
+    private DriveToPoint robotNav;
 
     public DrivetrainPinpoint(LinearOpMode opMode) { this.opMode = opMode; }
 
@@ -392,11 +419,11 @@ public class DrivetrainPinpoint {
         return outRobotHeadingValue;
     }
 
-    public DrivetrainMecanum.DrivetrainMode getDrivetrainMode() {
+    public DrivetrainPinpoint.DrivetrainMode getDrivetrainMode() {
         return drivetrainMode;
     }
 
-    public DrivetrainMecanum.DrivetrainSpeed getDrivetrainOutputPower() {
+    public DrivetrainPinpoint.DrivetrainSpeed getDrivetrainOutputPower() {
         return drivetrainSpeed;
     }
 
@@ -466,11 +493,11 @@ public class DrivetrainPinpoint {
         }
     }
 
-    public void setDrivetrainMode(DrivetrainMecanum.DrivetrainMode newDrivetrainMode) {
+    public void setDrivetrainMode(DrivetrainPinpoint.DrivetrainMode newDrivetrainMode) {
         drivetrainMode = newDrivetrainMode;
     }
 
-    public void setDrivetrainOutputPower(DrivetrainMecanum.DrivetrainSpeed newDrivetrainSpeed) {
+    public void setDrivetrainOutputPower(DrivetrainPinpoint.DrivetrainSpeed newDrivetrainSpeed) {
         drivetrainSpeed = newDrivetrainSpeed;
     }
 

@@ -5,6 +5,10 @@ import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.sun.tools.javac.util.Pair;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
+
 import kotlin.Triple;
 
 public class RobotConstants {
@@ -250,6 +254,9 @@ public class RobotConstants {
         // Lighting
         public static final String kLabelLightController = "control_lighting";
 
+        // Kickstand
+        public static final String kLabelServoKickstand = "servo_kickstand";
+
     }
 
     public static final class CommonSettings {
@@ -344,7 +351,40 @@ public class RobotConstants {
 
             public static final class Pose {
 
+                public static final Pose2D kRobotStart = new Pose2D(
+                        DistanceUnit.MM
+                        , 0
+                        , 0
+                        , AngleUnit.DEGREES
+                        , 0);
 
+                public static final Pose2D kTargetLaunchZone = new Pose2D(
+                        DistanceUnit.MM
+                        , 0
+                        , 0
+                        , AngleUnit.DEGREES
+                        , 0);
+
+                public static final Pose2D kTargetDepotZone = new Pose2D(
+                        DistanceUnit.MM
+                        , 0
+                        , 0
+                        , AngleUnit.DEGREES
+                        , 0);
+
+                public static final Pose2D kParkAuto = new Pose2D(
+                        DistanceUnit.INCH
+                        , 20
+                        , 20
+                        , AngleUnit.DEGREES
+                        , 90);
+
+                public static final Pose2D kParkTeleop = new Pose2D(
+                        DistanceUnit.MM
+                        , 0
+                        , 0
+                        , AngleUnit.DEGREES
+                        , 0);
 
             }
 
@@ -507,6 +547,19 @@ public class RobotConstants {
 
         public static final class AllianceTag {
             public static final boolean kIsLedEnabled = true;
+        }
+    }
+
+    public static final class Kickstand {
+
+        public static final class Setpoint {
+            public static final double kMin = 0.150;
+            public static final double kMax = 0.825;
+
+            public static final double kPrelift = 0.250;
+            public static final double kInitial = kMin;
+
+            public static final double kEndgame = 0.50;
         }
     }
 

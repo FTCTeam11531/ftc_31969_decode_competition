@@ -18,6 +18,7 @@ import org.firstinspires.ftc.teamcode.Drawing;
 import org.firstinspires.ftc.teamcode.system.drivetrain.DrivetrainPinpoint;
 import org.firstinspires.ftc.teamcode.system.indexer.Indexer;
 import org.firstinspires.ftc.teamcode.system.intake.Intake;
+import org.firstinspires.ftc.teamcode.system.kickstand.Kickstand;
 import org.firstinspires.ftc.teamcode.system.lighting.Lighting;
 import org.firstinspires.ftc.teamcode.system.shooter.Shooter;
 import org.firstinspires.ftc.teamcode.system.drivetrain.DrivetrainMecanum;
@@ -52,6 +53,8 @@ public class DriverControl extends LinearOpMode {
     // System - Lighting
     Lighting lighting = new Lighting(this);
 
+    // System - Kickstand
+    Kickstand kickstand = new Kickstand(this);
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -61,6 +64,7 @@ public class DriverControl extends LinearOpMode {
         // -------------------------------------------------
         ElapsedTime opModeRunTime = new ElapsedTime();
         Pose2D initialPose = new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.DEGREES, 0);
+        Pose2D robotPose;
 
         Gamepad currDriver = new Gamepad();
         Gamepad currOperator = new Gamepad();
@@ -72,7 +76,8 @@ public class DriverControl extends LinearOpMode {
                 , shooterVelocityLeft = RobotConstants.Shooter.Setpoint.Velocity.kLongRange
                 , shooterVelocityRight = RobotConstants.Shooter.Setpoint.Velocity.kLongRange
                 , intakeOutputLeft = 0.80, intakeOutputRight = 0.80
-                , indexerOutputLeft = 1.0, indexerOutputRight = 1.0;
+                , indexerOutputLeft = 1.0, indexerOutputRight = 1.0
+                , kickstandPosition = RobotConstants.Kickstand.Setpoint.kInitial;
 
         HuskyLens.Block[] listTargetAIObjects = null;
         HuskyLens.Block targetAIObject = null;
@@ -110,6 +115,10 @@ public class DriverControl extends LinearOpMode {
 
         // System - Lighting
         lighting.init();
+
+        // System - Kickstand
+        kickstand.init();
+        kickstandPosition = RobotConstants.Kickstand.Setpoint.kMax;
 
         // -- Configuration - Get Initial Pose for Drivetrain
         if(vision.getDetectedAllianceColor().equals("blue")) {
@@ -150,7 +159,7 @@ public class DriverControl extends LinearOpMode {
                 drivetrain.setRobotPose(visionPose);
             }
 
-            Pose2D robotPose = drivetrain.getRobotPose();
+            robotPose = drivetrain.getRobotPose();
 
             // Update Odometry Reading(s)
             drivetrain.updateOdometry();
@@ -248,6 +257,16 @@ public class DriverControl extends LinearOpMode {
             telemetry.update();
             idle();
 
+            // ------------------------------------------------------------
+            // Lighting
+            // ------------------------------------------------------------
+            if(vision.checkTargetBearing()) {
+                lighting.setLightPattern(RobotConstants.Lighting.Pattern.kOnTarget);
+            }
+            else {
+                lighting.setLightPattern(RobotConstants.Lighting.Pattern.kTeleop);
+            }
+
             // FTC Dashboard
 //            TelemetryPacket packet = new TelemetryPacket();
 //            packet.fieldOverlay().setStroke("#3F51B5");
@@ -317,23 +336,33 @@ public class DriverControl extends LinearOpMode {
             // -- robot orientation to field
             // -- installed direction of control hub
             // -- orientation of drivetrain/motors
-            Pose2D robotPose = drivetrain.getRobotPose();
-
-            inputAxial = -(currDriver.left_stick_y);
-            inputLateral = (currDriver.left_stick_x);
-            inputYaw =  (currDriver.right_stick_x);
-
-//            Vector2d inputAdjustment = new Vector2d(
-//                      inputAxial
-//                    , inputLateral
-//            ).
-//            ).angleCast(poseRobot.heading.inverse());
-
-
+//            if (vision.getDetectedLocalization() != null) {
+//                localizationData = vision.getDetectedLocalization();
+//
+//                Pose2D visionPose = new Pose2D(DistanceUnit.INCH
+//                        , Math.round(localizationData.robotPose.getPosition().x)
+//                        , Math.round(localizationData.robotPose.getPosition().y)
+//                        , AngleUnit.DEGREES
+//                        , Math.round(localizationData.robotPose.getOrientation().getYaw(AngleUnit.DEGREES)));
+//
+//                drivetrain.setRobotPose(visionPose);
+//            }
+//
+            robotPose = drivetrain.getRobotPose();
 
             // Update Odometry Reading(s)
             drivetrain.updateOdometry();
-//            drivetrain.updatePoseEstimate();
+
+            if(kickstand.getKickstandPosition() >= RobotConstants.Kickstand.Setpoint.kPrelift) {
+                inputAxial = 0;
+                inputLateral = 0;
+                inputYaw = 0;
+            }
+            else {
+                inputAxial = -(currDriver.left_stick_y);
+                inputLateral = (currDriver.left_stick_x);
+                inputYaw = (currDriver.right_stick_x);
+            }
 
             // Endgame Notification
 //            if(opModeRunTime.time() >= RobotConstants.CommonSettings.GameSettings.kEndgameStartTime && opModeRunTime.time() <= RobotConstants.CommonSettings.GameSettings.kEndgameEndTime) {
@@ -344,26 +373,26 @@ public class DriverControl extends LinearOpMode {
 //            }
 
             // Drivetrain Type determined by 'Drivetrain Mode' enumeration selection (Default to Field Centric)
-            if(drivetrain.getDrivetrainMode().equals(DrivetrainMecanum.DrivetrainMode.ROBOT_CENTRIC)) {
+            if(drivetrain.getDrivetrainMode().equals(DrivetrainPinpoint.DrivetrainMode.ROBOT_CENTRIC)) {
 
                 // Set Robot Centric Drivetrain
                 drivetrain.driveMecanum(inputAxial, inputLateral, inputYaw, drivetrain.getDrivetrainOutputPower().getValue());
             }
             else {
 
-            // Set Field Centric Drivetrain
-            drivetrain.driveMecanumFieldCentric(inputAxial, inputLateral, inputYaw, drivetrain.getDrivetrainOutputPower().getValue());
+                // Set Field Centric Drivetrain
+                drivetrain.driveMecanumFieldCentric(inputAxial, inputLateral, inputYaw, drivetrain.getDrivetrainOutputPower().getValue());
             }
 
             // ------------------------------------
             // Drivetrain Speed Options
             // ------------------------------------
             if(currDriver.right_bumper) {
-                drivetrain.setDrivetrainOutputPower(DrivetrainMecanum.DrivetrainSpeed.MEDIUM);
+                drivetrain.setDrivetrainOutputPower(DrivetrainPinpoint.DrivetrainSpeed.MEDIUM);
             }
 
             if(!currDriver.right_bumper) {
-                drivetrain.setDrivetrainOutputPower(DrivetrainMecanum.DrivetrainSpeed.LOW);
+                drivetrain.setDrivetrainOutputPower(DrivetrainPinpoint.DrivetrainSpeed.LOW);
             }
 
 //            if(gamepad1.dpad_up) {
@@ -386,30 +415,30 @@ public class DriverControl extends LinearOpMode {
             // Drivetrain Mode Options
             // ------------------------------------
             if(currDriver.start && currDriver.dpad_up) {
-                drivetrain.setDrivetrainMode(DrivetrainMecanum.DrivetrainMode.FIELD_CENTRIC);
+                drivetrain.setDrivetrainMode(DrivetrainPinpoint.DrivetrainMode.FIELD_CENTRIC);
             }
 
-//            if(currDriver.start && currDriver.dpad_down) {
-//                drivetrain.setDrivetrainMode(DrivetrainMecanum.DrivetrainMode.ROBOT_CENTRIC);
-//            }
+            if(currDriver.start && currDriver.dpad_down) {
+                drivetrain.setDrivetrainMode(DrivetrainPinpoint.DrivetrainMode.ROBOT_CENTRIC);
+            }
 
             // ------------------------------------
             // Intake
             // Driver Control
             // ------------------------------------
-            if(currDriver.dpad_up && !prevDriver.dpad_up) {
-                if(intakeOutputLeft < 1.0) {
-                    intakeOutputLeft = intakeOutputLeft + 0.05;
-                    intakeOutputRight = intakeOutputLeft;
-                }
-            }
-
-            if(currDriver.dpad_down && !prevDriver.dpad_down) {
-                if(intakeOutputLeft > 0.0) {
-                    intakeOutputLeft = intakeOutputLeft - 0.05;
-                    intakeOutputRight = intakeOutputLeft;
-                }
-            }
+//            if(currDriver.dpad_up && !prevDriver.dpad_up) {
+//                if(intakeOutputLeft < 1.0) {
+//                    intakeOutputLeft = intakeOutputLeft + 0.05;
+//                    intakeOutputRight = intakeOutputLeft;
+//                }
+//            }
+//
+//            if(currDriver.dpad_down && !prevDriver.dpad_down) {
+//                if(intakeOutputLeft > 0.0) {
+//                    intakeOutputLeft = intakeOutputLeft - 0.05;
+//                    intakeOutputRight = intakeOutputLeft;
+//                }
+//            }
 
             if(currDriver.left_trigger >= 0.20) {
                 intake.activateIntake(intakeOutputRight);
@@ -476,35 +505,47 @@ public class DriverControl extends LinearOpMode {
                 shooter.activateShooterVelocity(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft, shooterVelocityLeft);
 
                 if(shooter.checkShooterVelocityLevel(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft
-                        , RobotConstants.Shooter.Configuration.kVelocityMin)) {
+                        , shooterVelocityLeft)) {
 
                     indexer.activateIndexer(RobotConstants.HardwareConfiguration.kLabelIndexServoLeft, indexerOutputLeft);
                 }
             }
+            else if(currOperator.left_bumper) {
+                shooter.activateShooterVelocity(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft, -RobotConstants.Shooter.Setpoint.Velocity.kMinRange);
+                indexer.activateIndexer(RobotConstants.HardwareConfiguration.kLabelIndexServoLeft, -indexerOutputLeft);
+                intake.activateIntake(-intakeOutputRight);
+            }
             else {
                 shooter.deactivateShooter(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft);
+                indexer.deactivateIndexer(RobotConstants.HardwareConfiguration.kLabelIndexServoLeft);
             }
 
             if(currOperator.right_trigger >= 0.20) {
                 shooter.activateShooterVelocity(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight, shooterVelocityRight);
 
                 if(shooter.checkShooterVelocityLevel(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight
-                        , RobotConstants.Shooter.Configuration.kVelocityMin)) {
+                        , shooterVelocityRight)) {
 
                     indexer.activateIndexer(RobotConstants.HardwareConfiguration.kLabelIndexServoRight, indexerOutputLeft);
                 }
             }
+            else if(currOperator.right_bumper) {
+                shooter.activateShooterVelocity(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight, -RobotConstants.Shooter.Setpoint.Velocity.kMinRange);
+                indexer.activateIndexer(RobotConstants.HardwareConfiguration.kLabelIndexServoRight, -indexerOutputLeft);
+                intake.activateIntake(-intakeOutputRight);
+            }
             else {
                 shooter.deactivateShooter(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight);
+                indexer.deactivateIndexer(RobotConstants.HardwareConfiguration.kLabelIndexServoRight);
             }
 
             // ------------------------------------------------------------
             // Lighting
             // ------------------------------------------------------------
             if(shooter.checkShooterVelocityLevel(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft
-                    , RobotConstants.Shooter.Configuration.kVelocityMin)
+                    , shooterVelocityLeft)
                 || shooter.checkShooterVelocityLevel(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight
-                    , RobotConstants.Shooter.Configuration.kVelocityMin)) {
+                    , shooterVelocityRight)) {
 
                 lighting.setLightPattern(RobotConstants.Lighting.Pattern.kReadyToShoot);
             }
@@ -521,8 +562,25 @@ public class DriverControl extends LinearOpMode {
             // ------------------------------------------------------------
             // Endgame
             // ------------------------------------------------------------
+            if(currDriver.dpad_up && !prevDriver.dpad_up) {
+                if(kickstandPosition < 1.0) {
+                    kickstandPosition = kickstandPosition + 0.05;
+                }
+            }
 
+            if(currDriver.dpad_down && !prevDriver.dpad_down) {
+                if(kickstandPosition > 0.0) {
+                    kickstandPosition = kickstandPosition - 0.05;
+                }
+            }
 
+            if(currDriver.a && currOperator.a) {
+                kickstand.setKickstandPosition(kickstandPosition);
+            }
+
+            if(currDriver.b && currOperator.b) {
+                kickstand.setKickstandPosition(RobotConstants.Kickstand.Setpoint.kInitial);
+            }
 
             // ------------------------------------
             // Override
@@ -640,6 +698,14 @@ public class DriverControl extends LinearOpMode {
 //                telemetry.addData("Target top:", targetAIObject.top);
 //                telemetry.addData("Target left:", targetAIObject.left);
 //            }
+
+            // Intake
+            telemetry.addData("-","--------------------------------------");
+            telemetry.addData("-","-- Kickstand");
+            telemetry.addData("-","--------------------------------------");
+            telemetry.addData("main", String.format(Locale.US,"{current: %.3f, setpoint: %.3f}", kickstand.getKickstandPosition(), kickstandPosition));
+
+
 
             telemetry.addData("-", "------------------------------");
             telemetry.addData("-", "-- Detected April Tag ID    --");

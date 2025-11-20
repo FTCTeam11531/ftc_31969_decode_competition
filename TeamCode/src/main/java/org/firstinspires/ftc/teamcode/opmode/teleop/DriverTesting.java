@@ -5,6 +5,7 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.qualcomm.hardware.dfrobot.HuskyLens;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -30,6 +31,7 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 
 import java.util.Locale;
 
+@Disabled
 @TeleOp(name="Driver Testing", group="_test")
 public class DriverTesting extends LinearOpMode {
 
@@ -274,6 +276,24 @@ public class DriverTesting extends LinearOpMode {
             telemetry.update();
             idle();
 
+
+            // ------------------------------------------------------------
+            // Lighting
+            // ------------------------------------------------------------
+            if(shooter.checkShooterVelocityLevel(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft
+                    , RobotConstants.Shooter.Configuration.kVelocityMin)
+                    || shooter.checkShooterVelocityLevel(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight
+                    , RobotConstants.Shooter.Configuration.kVelocityMin)) {
+
+                lighting.setLightPattern(RobotConstants.Lighting.Pattern.kReadyToShoot);
+            }
+            else if(vision.checkTargetBearing()) {
+                lighting.setLightPattern(RobotConstants.Lighting.Pattern.kOnTarget);
+            }
+            else {
+                lighting.setLightPattern(RobotConstants.Lighting.Pattern.kTeleop);
+            }
+
             // FTC Dashboard
 //            TelemetryPacket packet = new TelemetryPacket();
 //            packet.fieldOverlay().setStroke("#3F51B5");
@@ -385,11 +405,11 @@ public class DriverTesting extends LinearOpMode {
             // Drivetrain Speed Options
             // ------------------------------------
             if(currDriver.right_bumper) {
-                drivetrain.setDrivetrainOutputPower(DrivetrainMecanum.DrivetrainSpeed.MEDIUM);
+                drivetrain.setDrivetrainOutputPower(DrivetrainPinpoint.DrivetrainSpeed.MEDIUM);
             }
 
             if(!currDriver.right_bumper) {
-                drivetrain.setDrivetrainOutputPower(DrivetrainMecanum.DrivetrainSpeed.LOW);
+                drivetrain.setDrivetrainOutputPower(DrivetrainPinpoint.DrivetrainSpeed.LOW);
             }
 
 //            if(gamepad1.dpad_up) {
@@ -412,7 +432,7 @@ public class DriverTesting extends LinearOpMode {
             // Drivetrain Mode Options
             // ------------------------------------
             if(currDriver.start && currDriver.dpad_up) {
-                drivetrain.setDrivetrainMode(DrivetrainMecanum.DrivetrainMode.FIELD_CENTRIC);
+                drivetrain.setDrivetrainMode(DrivetrainPinpoint.DrivetrainMode.FIELD_CENTRIC);
             }
 
 //            if(currDriver.start && currDriver.dpad_down) {
