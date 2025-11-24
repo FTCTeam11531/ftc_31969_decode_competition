@@ -82,7 +82,7 @@ public class DriverControl extends LinearOpMode {
         HuskyLens.Block[] listTargetAIObjects = null;
         HuskyLens.Block targetAIObject = null;
 
-        String detectedAprilTagIds;
+        String detectedAprilTagIds, labelAlliance = "unknown";
 
         int patternIdObelisk, pathAllianceAdj, headingAllianceAdj;
 
@@ -118,21 +118,21 @@ public class DriverControl extends LinearOpMode {
 
         // System - Kickstand
         kickstand.init();
-        kickstandPosition = RobotConstants.Kickstand.Setpoint.kMax;
+        kickstandPosition = RobotConstants.Kickstand.Setpoint.kEndgame;
 
         // -- Configuration - Get Initial Pose for Drivetrain
-        if(vision.getDetectedAllianceColor().equals("blue")) {
-            pathAllianceAdj = 1;
-            headingAllianceAdj = 0;
-//            initialPose = RobotConstants.Drivetrain.Autonomous.Pose.kInitialPoseHangmanBlue;
-//            sysLighting.setLightPattern(RobotConstants.Lighting.Pattern.Default.kAutonomousAllianceBlueHangman);
-        }
-        else {
-            pathAllianceAdj = -1;
-            headingAllianceAdj = 180;
-//            initialPose = RobotConstants.Drivetrain.Autonomous.Pose.kInitialPoseHangmanRed;
-//            sysLighting.setLightPattern(RobotConstants.Lighting.Pattern.Default.kAutonomousAllianceRedHangman);
-        }
+//        if(vision.getDetectedAllianceColor().equals("blue")) {
+//            pathAllianceAdj = 1;
+//            headingAllianceAdj = 0;
+////            initialPose = RobotConstants.Drivetrain.Autonomous.Pose.kInitialPoseHangmanBlue;
+////            sysLighting.setLightPattern(RobotConstants.Lighting.Pattern.Default.kAutonomousAllianceBlueHangman);
+//        }
+//        else {
+//            pathAllianceAdj = -1;
+//            headingAllianceAdj = 180;
+////            initialPose = RobotConstants.Drivetrain.Autonomous.Pose.kInitialPoseHangmanRed;
+////            sysLighting.setLightPattern(RobotConstants.Lighting.Pattern.Default.kAutonomousAllianceRedHangman);
+//        }
 
         // Clear all telemetry
         telemetry.clearAll();
@@ -211,7 +211,7 @@ public class DriverControl extends LinearOpMode {
             telemetry.addData("-", "------------------------------");
             telemetry.addData("-", "-- Vision");
             telemetry.addData("-", "------------------------------");
-            telemetry.addData("Alliance", vision.getDetectedAllianceColor());
+            telemetry.addData("Alliance", vision.getDetectedAllianceColor(labelAlliance));
             telemetry.addData("-", "------------------------------");
             telemetry.addData("-", "-- Detected April Tag ID    --");
             telemetry.addData("-", "------------------------------");
@@ -336,18 +336,25 @@ public class DriverControl extends LinearOpMode {
             // -- robot orientation to field
             // -- installed direction of control hub
             // -- orientation of drivetrain/motors
-//            if (vision.getDetectedLocalization() != null) {
-//                localizationData = vision.getDetectedLocalization();
-//
-//                Pose2D visionPose = new Pose2D(DistanceUnit.INCH
-//                        , Math.round(localizationData.robotPose.getPosition().x)
-//                        , Math.round(localizationData.robotPose.getPosition().y)
-//                        , AngleUnit.DEGREES
-//                        , Math.round(localizationData.robotPose.getOrientation().getYaw(AngleUnit.DEGREES)));
-//
-//                drivetrain.setRobotPose(visionPose);
-//            }
-//
+            if (vision.getDetectedLocalization() != null) {
+                localizationData = vision.getDetectedLocalization();
+
+                Pose2D visionPose = new Pose2D(DistanceUnit.INCH
+                        , Math.round(localizationData.robotPose.getPosition().x)
+                        , Math.round(localizationData.robotPose.getPosition().y)
+                        , AngleUnit.DEGREES
+                        , Math.round(localizationData.robotPose.getOrientation().getYaw(AngleUnit.DEGREES)));
+
+                if (visionPose.getX(DistanceUnit.INCH) < 0) {
+                    shooterVelocityLeft = RobotConstants.Shooter.Setpoint.Velocity.kMidRange;
+                    shooterVelocityRight = RobotConstants.Shooter.Setpoint.Velocity.kMidRange;
+                }
+                else {
+                    shooterVelocityLeft = RobotConstants.Shooter.Setpoint.Velocity.kLongRange;
+                    shooterVelocityRight = RobotConstants.Shooter.Setpoint.Velocity.kLongRange;
+                }
+            }
+
             robotPose = drivetrain.getRobotPose();
 
             // Update Odometry Reading(s)
@@ -418,9 +425,9 @@ public class DriverControl extends LinearOpMode {
                 drivetrain.setDrivetrainMode(DrivetrainPinpoint.DrivetrainMode.FIELD_CENTRIC);
             }
 
-            if(currDriver.start && currDriver.dpad_down) {
-                drivetrain.setDrivetrainMode(DrivetrainPinpoint.DrivetrainMode.ROBOT_CENTRIC);
-            }
+//            if(currDriver.start && currDriver.dpad_down) {
+//                drivetrain.setDrivetrainMode(DrivetrainPinpoint.DrivetrainMode.ROBOT_CENTRIC);
+//            }
 
             // ------------------------------------
             // Intake
@@ -487,19 +494,19 @@ public class DriverControl extends LinearOpMode {
             // Shooter
             // Operator control
             // ------------------------------------
-            if(currOperator.dpad_up && !prevOperator.dpad_up) {
-                if(shooterVelocityLeft < RobotConstants.Shooter.Setpoint.Velocity.kMaxRange) {
-                    shooterVelocityLeft = shooterVelocityLeft + 100;
-                    shooterVelocityRight = shooterVelocityLeft;
-                }
-            }
-
-            if(currOperator.dpad_down && !prevOperator.dpad_down) {
-                if(shooterVelocityLeft > RobotConstants.Shooter.Setpoint.Velocity.kMinRange) {
-                    shooterVelocityLeft = shooterVelocityLeft - 100;
-                    shooterVelocityRight = shooterVelocityLeft;
-                }
-            }
+//            if(currOperator.dpad_up && !prevOperator.dpad_up) {
+//                if(shooterVelocityLeft < RobotConstants.Shooter.Setpoint.Velocity.kMaxRange) {
+//                    shooterVelocityLeft = shooterVelocityLeft + 20;
+//                    shooterVelocityRight = shooterVelocityLeft;
+//                }
+//            }
+//
+//            if(currOperator.dpad_down && !prevOperator.dpad_down) {
+//                if(shooterVelocityLeft > RobotConstants.Shooter.Setpoint.Velocity.kMinRange) {
+//                    shooterVelocityLeft = shooterVelocityLeft - 20;
+//                    shooterVelocityRight = shooterVelocityLeft;
+//                }
+//            }
 
             if(currOperator.left_trigger >= 0.20) {
                 shooter.activateShooterVelocity(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft, shooterVelocityLeft);
@@ -663,9 +670,9 @@ public class DriverControl extends LinearOpMode {
 
 
             // Show Arm and Intake Telemetry
-            telemetry.addData("-","--------------------------------------");
-            telemetry.addData("-","-- Arm / Intake");
-            telemetry.addData("-","--------------------------------------");
+//            telemetry.addData("-","--------------------------------------");
+//            telemetry.addData("-","-- Arm / Intake");
+//            telemetry.addData("-","--------------------------------------");
 //            telemetry.addData("arm position - motor", String.format(Locale.US,"{pivot: %d, extend left: %d, extend right: %d, shuttle: %d}", sysArm.getArmMotorCurrentPosition(RobotConstants.HardwareConfiguration.kLabelArmMotorPivot), sysArm.getArmMotorCurrentPosition(RobotConstants.HardwareConfiguration.kLabelArmMotorExtendLeft), sysArm.getArmMotorCurrentPosition(RobotConstants.HardwareConfiguration.kLabelArmMotorExtendRight), sysArm.getArmMotorCurrentPosition(RobotConstants.HardwareConfiguration.kLabelArmMotorShuttle)));
 //            telemetry.addData("arm position - tolerance", String.format(Locale.US,"{pivot: %d, extend left: %d, extend right: %d}", sysArm.getArmMotorPositionTolerance(RobotConstants.HardwareConfiguration.kLabelArmMotorPivot), sysArm.getArmMotorPositionTolerance(RobotConstants.HardwareConfiguration.kLabelArmMotorExtendLeft), sysArm.getArmMotorPositionTolerance(RobotConstants.HardwareConfiguration.kLabelArmMotorExtendRight)));
 //            telemetry.addData("arm position - extension", String.format(Locale.US,"{left: %.3f, right: %.3f, max: %.3f}", sysArm.getArmExtensionSensorCurrentPosition(RobotConstants.HardwareConfiguration.kLabelArmSensorExtendLimitLeft), sysArm.getArmExtensionSensorCurrentPosition(RobotConstants.HardwareConfiguration.kLabelArmSensorExtendLimitRight), sysArm.getArmExtensionPosition()));
@@ -681,9 +688,9 @@ public class DriverControl extends LinearOpMode {
 //            telemetry.addData("Extend Direction", sysArm.getArmTravelDirectionMode(RobotConstants.HardwareConfiguration.kLabelArmMotorExtendLeft));
 
             // Show Vision
-            telemetry.addData("-","--------------------------------------");
-            telemetry.addData("-","-- Vision");
-            telemetry.addData("-","--------------------------------------");
+//            telemetry.addData("-","--------------------------------------");
+//            telemetry.addData("-","-- Vision");
+//            telemetry.addData("-","--------------------------------------");
 //            telemetry.addData("alliance", String.format(Locale.US,"{color: %s, red: %d, blue: %d, green: %d}", sysVision.getAllianceColor(), sysVision.getAllianceColorValueRed(), sysVision.getAllianceColorValueBlue(), sysVision.getAllianceColorValueGreen()));
 //            telemetry.addData("Camera Block Count", vision.getListAICameraObject().length);
 //            if (targetAIObject != null) {
@@ -707,12 +714,12 @@ public class DriverControl extends LinearOpMode {
 
 
 
-            telemetry.addData("-", "------------------------------");
-            telemetry.addData("-", "-- Detected April Tag ID    --");
-            telemetry.addData("-", "------------------------------");
-            telemetry.addData("Target ID", detectedAprilTagIds);
-
-            vision.telemetryAprilTag();
+//            telemetry.addData("-", "------------------------------");
+//            telemetry.addData("-", "-- Detected April Tag ID    --");
+//            telemetry.addData("-", "------------------------------");
+//            telemetry.addData("Target ID", detectedAprilTagIds);
+//
+//            vision.telemetryAprilTag();
 
             // ------------------------------------------------------------
             // - send telemetry to driver hub

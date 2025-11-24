@@ -214,7 +214,7 @@ public class Shooter {
     // Action Methods - Road Runner
     // ----------------------------------------------
 
-    // Road Runner - Action - Activate Indexer
+    // Road Runner - Action - Activate Shooter - Power
     public class ActionActivateShooter implements Action {
         private String hardwareLabel;
         private double setpoint;
@@ -236,6 +236,28 @@ public class Shooter {
         return new ActionActivateShooter(hardwareLabel, setpoint);
     }
 
+
+    // Road Runner - Action - Activate Shooter - Velocity
+    public class ActionActivateShooterVelocity implements Action {
+        private String hardwareLabel;
+        private double setpoint;
+
+        // Action class constructor
+        public ActionActivateShooterVelocity(String hardwareLabel, double setpoint) {
+            this.hardwareLabel = hardwareLabel;
+            this.setpoint = setpoint;
+        }
+
+        @Override
+        public boolean run(@NonNull TelemetryPacket packet) {
+            activateShooterVelocity(hardwareLabel, setpoint);
+            return false;
+        }
+    }
+
+    public Action actionActivateShooterVelocity(String hardwareLabel, double setpoint) {
+        return new ActionActivateShooterVelocity(hardwareLabel, setpoint);
+    }
 
     // ----------------------------------------------
     // Get Methods

@@ -19,6 +19,7 @@ import org.firstinspires.ftc.teamcode.Drawing;
 import org.firstinspires.ftc.teamcode.system.drivetrain.DrivetrainMecanum;
 import org.firstinspires.ftc.teamcode.system.indexer.Indexer;
 import org.firstinspires.ftc.teamcode.system.intake.Intake;
+import org.firstinspires.ftc.teamcode.system.lighting.Lighting;
 import org.firstinspires.ftc.teamcode.system.shooter.Shooter;
 import org.firstinspires.ftc.teamcode.system.sound.Sound;
 import org.firstinspires.ftc.teamcode.system.vision.Vision;
@@ -27,7 +28,7 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 
 import java.util.Locale;
 
-@Disabled
+//@Disabled
 @Autonomous(name="Depot Launch Zone", group="_main", preselectTeleOp="DriverControl")
 public class DepotLaunchZone extends LinearOpMode {
 
@@ -49,6 +50,9 @@ public class DepotLaunchZone extends LinearOpMode {
     // System - Sound
     Sound sound = new Sound(this);
 
+    // System - Lighting
+    Lighting lighting = new Lighting(this);
+
     @Override
     public void runOpMode() throws InterruptedException {
 
@@ -56,17 +60,20 @@ public class DepotLaunchZone extends LinearOpMode {
         // Misc - OpMode Variables
         // -------------------------------------------------
         ElapsedTime opModeRunTime = new ElapsedTime();
+        ElapsedTime driveTime = new ElapsedTime();
+
         Pose2d initialPose = RobotConstants.OpModeTransition.getPoseFinalOpMode();
 
         HuskyLens.Block[] listTargetAIObjects = null;
         HuskyLens.Block targetAIObject = null;
 
-        String detectedAprilTagIds;
+        String detectedAprilTagIds, labelAlliance = "unknown";
 
-        int patternIdObelisk, pathAllianceAdj, headingAllianceAdj;
+        int patternIdObelisk, pathAllianceAdjX, pathAllianceAdjY, headingAllianceAdj;
 
         AprilTagDetection localizationData = null;
 
+        Pose2d robotPose;
 
         // Setup Telemetry
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
@@ -95,20 +102,8 @@ public class DepotLaunchZone extends LinearOpMode {
         // System - Sound
         sound.init();
 
-        // -- Configuration - Get Initial Pose for Drivetrain
-        if(vision.getDetectedAllianceColor().equals("blue")) {
-            pathAllianceAdj = 1;
-            headingAllianceAdj = 0;
-//            initialPose = RobotConstants.Drivetrain.Autonomous.Pose.kInitialPoseHangmanBlue;
-//            sysLighting.setLightPattern(RobotConstants.Lighting.Pattern.Default.kAutonomousAllianceBlueHangman);
-        }
-        else {
-            pathAllianceAdj = -1;
-            headingAllianceAdj = 180;
-//            initialPose = RobotConstants.Drivetrain.Autonomous.Pose.kInitialPoseHangmanRed;
-//            sysLighting.setLightPattern(RobotConstants.Lighting.Pattern.Default.kAutonomousAllianceRedHangman);
-        }
-
+        // System - Lighting
+        lighting.init();
 
         // Clear all telemetry
         telemetry.clearAll();
@@ -125,22 +120,33 @@ public class DepotLaunchZone extends LinearOpMode {
                         , Math.round(localizationData.robotPose.getOrientation().getYaw()));
 
                 drivetrain.setPose(visionPose);
+//                drivetrain.updatePoseEstimate();
+                drivetrain.updateOdometry();
+//                drivetrain.localizer.setPose(visionPose);
+                drivetrain.localizer.update();
             }
 
-            Pose2d robotPose = drivetrain.localizer.getPose();
+            robotPose = drivetrain.localizer.getPose();
 
             // Set Initial Pose to robot pose to be used when active
             initialPose = robotPose;
 
-            // Vision - get apriltag target data
-            listTargetAIObjects = vision.getListAICameraObject();
-
-            if (listTargetAIObjects.length > 0) {
-                targetAIObject = vision.getAICameraObject(listTargetAIObjects);
-            }
-
             detectedAprilTagIds = vision.getDetectedAprilTagIds();
             patternIdObelisk = vision.getDetectedObeliskId();
+
+            // -- Configuration - Get Initial Pose for Drivetrain
+            if(vision.getDetectedAllianceColor(labelAlliance).equals("blue")) {
+                pathAllianceAdjX = 1;
+                pathAllianceAdjY = -1;
+                headingAllianceAdj = 0;
+                labelAlliance = "blue";
+            }
+            else {
+                pathAllianceAdjX = 1;
+                pathAllianceAdjY = 1;
+                headingAllianceAdj = 180;
+                labelAlliance = "red";
+            }
 
             // ------------------------------------------------------------
             // Send telemetry message to signify robot completed initialization and waiting to start;
@@ -149,6 +155,8 @@ public class DepotLaunchZone extends LinearOpMode {
             telemetry.addData("-", "All Systems Ready - Waiting to Start");
             telemetry.addData("-","--------------------------------------");
             telemetry.addData("run time", "%.1f seconds", opModeRunTime.seconds());
+            telemetry.addData("-", "------------------------------");
+            telemetry.addData("Alliance", vision.getDetectedAllianceColor(labelAlliance));
             telemetry.addData("-","--------------------------------------");
             telemetry.addData("drivetrain", String.format(Locale.US,"{mode: %s, speed: %s}", drivetrain.getDrivetrainMode().getLabel(), drivetrain.getDrivetrainOutputPower().getLabel()));
             telemetry.addData("robot pose", String.format(Locale.US,"{x: %s, y: %s, heading: %s}"
@@ -164,8 +172,6 @@ public class DepotLaunchZone extends LinearOpMode {
             telemetry.addData("-", "------------------------------");
             telemetry.addData("-", "-- Vision");
             telemetry.addData("-", "------------------------------");
-            telemetry.addData("Alliance", vision.getDetectedAllianceColor());
-            telemetry.addData("-", "------------------------------");
             telemetry.addData("-", "-- Detected April Tag ID    --");
             telemetry.addData("-", "------------------------------");
             telemetry.addData("-", "-- Webcam");
@@ -180,35 +186,45 @@ public class DepotLaunchZone extends LinearOpMode {
             telemetry.addData("Target ID", detectedAprilTagIds);
             vision.telemetryAprilTag();
 
-            telemetry.addData("-", "------------------------------");
-            telemetry.addData("-", "-- HuskyLens");
-            telemetry.addData("-", "------------------------------");
-            telemetry.addData("Camera Block Count", vision.getListAICameraObject().length);
-            if (targetAIObject != null) {
-                telemetry.addData("-", "------------------------------");
-                telemetry.addData("-", "-- Target Object");
-                telemetry.addData("-", "------------------------------");
-                telemetry.addData("Target ID", targetAIObject.id);
-                telemetry.addData("Target x:", targetAIObject.x);
-                telemetry.addData("Target y:", targetAIObject.y);
-                telemetry.addData("Target width:", targetAIObject.width);
-                telemetry.addData("Target height:", targetAIObject.height);
-                telemetry.addData("Target top:", targetAIObject.top);
-                telemetry.addData("Target left:", targetAIObject.left);
-            }
-
-
             // ------------------------------------------------------------
             // - send telemetry to driver hub
             // ------------------------------------------------------------
             telemetry.update();
             idle();
 
+            // ------------------------------------------------------------
+            // Lighting
+            // ------------------------------------------------------------
+            if(shooter.checkShooterVelocityLevel(RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft
+                    , RobotConstants.Shooter.Configuration.kVelocityMin)
+                    || shooter.checkShooterVelocityLevel(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight
+                    , RobotConstants.Shooter.Configuration.kVelocityMin)) {
+
+                lighting.setLightPattern(RobotConstants.Lighting.Pattern.kReadyToShoot);
+            }
+            else if(vision.checkTargetBearing()) {
+                if(labelAlliance == "blue") {
+                    lighting.setLightPattern(RobotConstants.Lighting.Pattern.kOnTargetBlue);
+                }
+                else if(labelAlliance == "red") {
+                    lighting.setLightPattern(RobotConstants.Lighting.Pattern.kOnTargetRed);
+                }
+                else {
+                    lighting.setLightPattern(RobotConstants.Lighting.Pattern.kOnTarget);
+                }
+            }
+            else if(opModeRunTime.time() >= 90.00 && opModeRunTime.time() <= 120.00) {
+                lighting.setLightPattern(RobotConstants.Lighting.Pattern.kEndgame);
+            }
+            else {
+                lighting.setLightPattern(RobotConstants.Lighting.Pattern.kTeleop);
+            }
+
             // FTC Dashboard
-            TelemetryPacket packet = new TelemetryPacket();
-            packet.fieldOverlay().setStroke("#3F51B5");
-            Drawing.drawRobot(packet.fieldOverlay(), robotPose);
-            FtcDashboard.getInstance().sendTelemetryPacket(packet);
+//            TelemetryPacket packet = new TelemetryPacket();
+//            packet.fieldOverlay().setStroke("#3F51B5");
+//            Drawing.drawRobot(packet.fieldOverlay(), robotPose);
+//            FtcDashboard.getInstance().sendTelemetryPacket(packet);
         }
 
         // Wait for Start state (from driver station) - (disable if using an init loop)
@@ -234,10 +250,16 @@ public class DepotLaunchZone extends LinearOpMode {
             TrajectoryActionBuilder waitPeriodSecondsOneHalf = drivetrain.actionBuilder(initialPose)
                     .waitSeconds(1.5);
 
+            TrajectoryActionBuilder waitPeriodSecondsThree = drivetrain.actionBuilder(initialPose)
+                    .waitSeconds(3.0);
+
+            TrajectoryActionBuilder waitPeriodSecondsSix = drivetrain.actionBuilder(initialPose)
+                    .waitSeconds(6.0);
+
             // Path - Move to Shoot - Position One
-            TrajectoryActionBuilder pathStart = drivetrain.actionBuilder(initialPose)
-                    .strafeTo(new Vector2d(0 * pathAllianceAdj, 33 * pathAllianceAdj))
-                    .waitSeconds(0.5);
+//            TrajectoryActionBuilder pathStart = drivetrain.actionBuilder(initialPose)
+//                    .strafeTo(new Vector2d(0 * pathAllianceAdj, 33 * pathAllianceAdj))
+//                    .waitSeconds(0.5);
 
             // Log start of action(s)
             telemetry.addData("timestamp", "%.1f seconds", opModeRunTime.seconds());
@@ -245,54 +267,137 @@ public class DepotLaunchZone extends LinearOpMode {
             telemetry.addData("-","--------------------------------------");
             telemetry.update();
 
+            driveTime.reset();
+            while (opModeIsActive() && (driveTime.seconds() < 2)) {
+                drivetrain.driveMecanum(-.8, 0, 0, .5);
+
+
+//                // -- Configuration - Get Initial Pose for Drivetrain
+//                if(vision.getDetectedAllianceColor(labelAlliance).equals("blue")) {
+//                    pathAllianceAdjX = 1;
+//                    pathAllianceAdjY = -1;
+//                    headingAllianceAdj = 0;
+//                    labelAlliance = "blue";
+//                }
+//                else {
+//                    pathAllianceAdjX = 1;
+//                    pathAllianceAdjY = 1;
+//                    headingAllianceAdj = 180;
+//                    labelAlliance = "red";
+//                }
+
+            }
+
+//            drivetrain.driveMecanum(0,0,0,0);
+
+//            // -- Configuration - Get Initial Pose for Drivetrain
+//            if(vision.getDetectedAllianceColor(labelAlliance).equals("blue")) {
+//                pathAllianceAdjX = 1;
+//                pathAllianceAdjY = -1;
+//                headingAllianceAdj = 0;
+//                labelAlliance = "blue";
+//            }
+//            else {
+//                pathAllianceAdjX = 1;
+//                pathAllianceAdjY = 1;
+//                headingAllianceAdj = 180;
+//                labelAlliance = "red";
+//            }
+
             Actions.runBlocking(
                     new SequentialAction(
 
                             // Initial
                             waitPeriodSecondsHalf.build()
 
-                            // Move to shooting Position
-                            , pathStart.build()
-
                             // Shoot loaded Artifacts
-                            , new ParallelAction()
                             , new ParallelAction(
-                                      shooter.actionActivateShooter(
-                                        RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft
-                                    ,   RobotConstants.Shooter.Configuration.kMotorOutputPowerHigh)
-                                    , shooter.actionActivateShooter(
-                                        RobotConstants.HardwareConfiguration.kLabelShooterMotorRight
-                                    ,   RobotConstants.Shooter.Configuration.kMotorOutputPowerHigh)
-                                )
+                            shooter.actionActivateShooterVelocity(
+                                    RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft
+                                    ,   RobotConstants.Shooter.Setpoint.Velocity.kMidRange)
+                            , shooter.actionActivateShooterVelocity(
+                            RobotConstants.HardwareConfiguration.kLabelShooterMotorRight
+                            ,   RobotConstants.Shooter.Setpoint.Velocity.kMidRange)
+                            , waitPeriodSecondsThree.build()
+                    )
+                            , waitPeriodSecondsThree.build()
                             , waitPeriodSecondsHalf.build()
-                            , new ParallelAction(
-                                      indexer.actionActivateIndexer(
-                                        RobotConstants.HardwareConfiguration.kLabelIndexServoLeft
-                                    ,   RobotConstants.Indexer.Servo.Setpoint.kForward)
-                                    , indexer.actionActivateIndexer(
-                                        RobotConstants.HardwareConfiguration.kLabelIndexServoRight
-                                    ,   RobotConstants.Indexer.Servo.Setpoint.kForward)
-                                )
 
+                            , new ParallelAction(
+                            shooter.actionActivateShooterVelocity(
+                                    RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft
+                                    ,   RobotConstants.Shooter.Setpoint.Velocity.kMidRange)
+                            , shooter.actionActivateShooterVelocity(
+                            RobotConstants.HardwareConfiguration.kLabelShooterMotorRight
+                            ,   RobotConstants.Shooter.Setpoint.Velocity.kMidRange)
+                            , indexer.actionActivateIndexer(
+                            RobotConstants.HardwareConfiguration.kLabelIndexServoLeft
+                            ,   RobotConstants.Indexer.Servo.Setpoint.kForward)
+                            , indexer.actionActivateIndexer(
+                            RobotConstants.HardwareConfiguration.kLabelIndexServoRight
+                            ,   RobotConstants.Indexer.Servo.Setpoint.kForward)
+                            , waitPeriodSecondsThree.build()
+                    )
+                            , waitPeriodSecondsThree.build()
+
+                            , new ParallelAction(
+                            shooter.actionActivateShooterVelocity(
+                                    RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft
+                                    ,   RobotConstants.Shooter.Setpoint.Velocity.kMidRange)
+                            , shooter.actionActivateShooterVelocity(
+                            RobotConstants.HardwareConfiguration.kLabelShooterMotorRight
+                            ,   RobotConstants.Shooter.Setpoint.Velocity.kMidRange)
+                            , indexer.actionActivateIndexer(
+                            RobotConstants.HardwareConfiguration.kLabelIndexServoLeft
+                            ,   RobotConstants.Indexer.Servo.Setpoint.kForward)
+                            , indexer.actionActivateIndexer(
+                            RobotConstants.HardwareConfiguration.kLabelIndexServoRight
+                            ,   RobotConstants.Indexer.Servo.Setpoint.kForward)
+                            , intake.actionActivateIntake(
+                            RobotConstants.Intake.Configuration.kMotorOutputPowerHigh)
+                            , waitPeriodSecondsSix.build()
+                    )
+                            , waitPeriodSecondsThree.build()
+                            , waitPeriodSecondsThree.build()
+
+                            // Turn Off
                             , waitPeriodSecondsOneHalf.build()
                             , new ParallelAction(
-                                indexer.actionActivateIndexer(
-                                        RobotConstants.HardwareConfiguration.kLabelIndexServoLeft
+                            indexer.actionActivateIndexer(
+                                    RobotConstants.HardwareConfiguration.kLabelIndexServoLeft
                                     ,   RobotConstants.Indexer.Servo.Setpoint.kInit)
                             ,   indexer.actionActivateIndexer(
-                                    RobotConstants.HardwareConfiguration.kLabelIndexServoRight
-                                ,   RobotConstants.Indexer.Servo.Setpoint.kInit)
-                                , shooter.actionActivateShooter(
-                                    RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft, 0)
+                            RobotConstants.HardwareConfiguration.kLabelIndexServoRight
+                            ,   RobotConstants.Indexer.Servo.Setpoint.kInit)
+                            , shooter.actionActivateShooter(
+                            RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft, 0)
                             ,     shooter.actionActivateShooter(
-                                    RobotConstants.HardwareConfiguration.kLabelShooterMotorRight, 0)
-                    )
+                            RobotConstants.HardwareConfiguration.kLabelShooterMotorRight, 0)
+                            , intake.actionActivateIntake(
+                            0)
 
+                            // Move away from launch zone
+//                            , pathStart.build()
+
+                            , waitPeriodSecondsOneHalf.build()
+
+                    )
 
                     )
             );
 
 
+            driveTime.reset();
+            if (labelAlliance == "blue") {
+                while (opModeIsActive() && (driveTime.seconds() < 1)) {
+                    drivetrain.driveMecanum(0, -.8, 0, .5);
+                }
+            }
+            else {
+                while (opModeIsActive() && (driveTime.seconds() < 1)) {
+                    drivetrain.driveMecanum(0, .8, 0, .5);
+                }
+            }
 
             // Log timestamp for completion
             telemetry.addData("timestamp", "%.1f seconds", opModeRunTime.seconds());

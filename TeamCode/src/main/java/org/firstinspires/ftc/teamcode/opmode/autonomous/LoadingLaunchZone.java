@@ -60,15 +60,15 @@ public class LoadingLaunchZone extends LinearOpMode {
         // Misc - OpMode Variables
         // -------------------------------------------------
         ElapsedTime opModeRunTime = new ElapsedTime();
+        ElapsedTime driveTime = new ElapsedTime();
+
         Pose2d initialPose = new Pose2d(0,0,0);// RobotConstants.OpModeTransition.getPoseFinalOpMode();
 
-        String detectedAprilTagIds;
+        String detectedAprilTagIds, labelAlliance = "unknown";
 
         int patternIdObelisk, pathAllianceAdjX, pathAllianceAdjY, headingAllianceAdj;
 
         AprilTagDetection localizationData = null;
-
-        String labelAlliance;
 
         Pose2d robotPose;
 
@@ -104,25 +104,6 @@ public class LoadingLaunchZone extends LinearOpMode {
         // System - Lighting
         lighting.init();
 
-        // -- Configuration - Get Initial Pose for Drivetrain
-        if(vision.getDetectedAllianceColor().equals("blue")) {
-            pathAllianceAdjX = 1;
-            pathAllianceAdjY = -1;
-            headingAllianceAdj = 0;
-            labelAlliance = "blue";
-//            initialPose = RobotConstants.Drivetrain.Autonomous.Pose.kInitialPoseHangmanBlue;
-//            sysLighting.setLightPattern(RobotConstants.Lighting.Pattern.Default.kAutonomousAllianceBlueHangman);
-        }
-        else {
-            pathAllianceAdjX = 1;
-            pathAllianceAdjY = 1;
-            headingAllianceAdj = 180;
-            labelAlliance = "red";
-//            initialPose = RobotConstants.Drivetrain.Autonomous.Pose.kInitialPoseHangmanRed;
-//            sysLighting.setLightPattern(RobotConstants.Lighting.Pattern.Default.kAutonomousAllianceRedHangman);
-        }
-
-
         // Clear all telemetry
         telemetry.clearAll();
 
@@ -154,6 +135,20 @@ public class LoadingLaunchZone extends LinearOpMode {
             detectedAprilTagIds = vision.getDetectedAprilTagIds();
             patternIdObelisk = vision.getDetectedObeliskId();
 
+            // -- Configuration - Get Initial Pose for Drivetrain
+            if(vision.getDetectedAllianceColor(labelAlliance).equals("blue")) {
+                pathAllianceAdjX = 1;
+                pathAllianceAdjY = -1;
+                headingAllianceAdj = 0;
+                labelAlliance = "blue";
+            }
+            else {
+                pathAllianceAdjX = 1;
+                pathAllianceAdjY = 1;
+                headingAllianceAdj = 180;
+                labelAlliance = "red";
+            }
+
             // ------------------------------------------------------------
             // Send telemetry message to signify robot completed initialization and waiting to start;
             // ------------------------------------------------------------
@@ -161,6 +156,8 @@ public class LoadingLaunchZone extends LinearOpMode {
             telemetry.addData("-", "All Systems Ready - Waiting to Start");
             telemetry.addData("-","--------------------------------------");
             telemetry.addData("run time", "%.1f seconds", opModeRunTime.seconds());
+            telemetry.addData("-", "------------------------------");
+            telemetry.addData("Alliance", vision.getDetectedAllianceColor(labelAlliance));
             telemetry.addData("-","--------------------------------------");
             telemetry.addData("drivetrain", String.format(Locale.US,"{mode: %s, speed: %s}", drivetrain.getDrivetrainMode().getLabel(), drivetrain.getDrivetrainOutputPower().getLabel()));
             telemetry.addData("robot pose", String.format(Locale.US,"{x: %s, y: %s, heading: %s}"
@@ -186,8 +183,6 @@ public class LoadingLaunchZone extends LinearOpMode {
             // ------------------------------------------------------------
             telemetry.addData("-", "------------------------------");
             telemetry.addData("-", "-- Vision");
-            telemetry.addData("-", "------------------------------");
-            telemetry.addData("Alliance", vision.getDetectedAllianceColor());
             telemetry.addData("-", "------------------------------");
             telemetry.addData("-", "-- Detected April Tag ID    --");
             telemetry.addData("-", "------------------------------");
@@ -220,7 +215,15 @@ public class LoadingLaunchZone extends LinearOpMode {
                 lighting.setLightPattern(RobotConstants.Lighting.Pattern.kReadyToShoot);
             }
             else if(vision.checkTargetBearing()) {
-                lighting.setLightPattern(RobotConstants.Lighting.Pattern.kOnTarget);
+                if(labelAlliance == "blue") {
+                    lighting.setLightPattern(RobotConstants.Lighting.Pattern.kOnTargetBlue);
+                }
+                else if(labelAlliance == "red") {
+                    lighting.setLightPattern(RobotConstants.Lighting.Pattern.kOnTargetRed);
+                }
+                else {
+                    lighting.setLightPattern(RobotConstants.Lighting.Pattern.kOnTarget);
+                }
             }
             else if(opModeRunTime.time() >= 90.00 && opModeRunTime.time() <= 120.00) {
                 lighting.setLightPattern(RobotConstants.Lighting.Pattern.kEndgame);
@@ -230,10 +233,10 @@ public class LoadingLaunchZone extends LinearOpMode {
             }
 
             // FTC Dashboard
-            TelemetryPacket packet = new TelemetryPacket();
-            packet.fieldOverlay().setStroke("#3F51B5");
-            Drawing.drawRobot(packet.fieldOverlay(), robotPose);
-            FtcDashboard.getInstance().sendTelemetryPacket(packet);
+//            TelemetryPacket packet = new TelemetryPacket();
+//            packet.fieldOverlay().setStroke("#3F51B5");
+//            Drawing.drawRobot(packet.fieldOverlay(), robotPose);
+//            FtcDashboard.getInstance().sendTelemetryPacket(packet);
         }
 
         // Wait for Start state (from driver station) - (disable if using an init loop)
@@ -273,38 +276,38 @@ public class LoadingLaunchZone extends LinearOpMode {
 //                            , Math.toRadians(RobotConstants.UnitConversion.addTwoDegreeValuesTogether(180, headingAllianceAdj))), Math.PI/2)
 //                    .waitSeconds(0.5);
 
-            TrajectoryActionBuilder pathStart;
-            if (labelAlliance == "blue") {
-                pathStart = drivetrain.actionBuilder(initialPose)
-//                        .splineToLinearHeading(new Pose2d(
-//                                25 * pathAllianceAdjX
-//                                , 20 * pathAllianceAdjY
-//                                , Math.toRadians(RobotConstants.UnitConversion.addTwoDegreeValuesTogether(180, headingAllianceAdj))), Math.PI / 2)
-//                        .strafeTo(new Vector2d(25 * pathAllianceAdjX, 20 * pathAllianceAdjY))
-//                    .splineToLinearHeading(new Pose2d(
-//                             25 //* pathAllianceAdjX
-//                            ,20 //* pathAllianceAdjY
-//                            , Math.toRadians(RobotConstants.UnitConversion.addTwoDegreeValuesTogether(180, headingAllianceAdj))), Math.PI/2)
-                        .strafeTo(new Vector2d(20, 20))
-
-                        .waitSeconds(0.5);
-            }
-            else {
-                pathStart = drivetrain.actionBuilder(initialPose)
-//                        .splineToLinearHeading(new Pose2d(
-//                                25 * pathAllianceAdjX
-//                                , 20 * pathAllianceAdjY
-//                                , Math.toRadians(RobotConstants.UnitConversion.addTwoDegreeValuesTogether(180, headingAllianceAdj))), Math.PI / 2)
-//                        .splineToLinearHeading(new Pose2d(
-//                                25
-//                                ,20
-//                                , initialPose.heading.real), Math.PI / 2)
-//                        .lineToY(20)
-                        .strafeTo(new Vector2d(20, -20))
-
-
-                        .waitSeconds(0.5);
-            }
+//            TrajectoryActionBuilder pathStart;
+//            if (labelAlliance == "blue") {
+//                pathStart = drivetrain.actionBuilder(initialPose)
+////                        .splineToLinearHeading(new Pose2d(
+////                                25 * pathAllianceAdjX
+////                                , 20 * pathAllianceAdjY
+////                                , Math.toRadians(RobotConstants.UnitConversion.addTwoDegreeValuesTogether(180, headingAllianceAdj))), Math.PI / 2)
+////                        .strafeTo(new Vector2d(25 * pathAllianceAdjX, 20 * pathAllianceAdjY))
+////                    .splineToLinearHeading(new Pose2d(
+////                             25 //* pathAllianceAdjX
+////                            ,20 //* pathAllianceAdjY
+////                            , Math.toRadians(RobotConstants.UnitConversion.addTwoDegreeValuesTogether(180, headingAllianceAdj))), Math.PI/2)
+//                        .strafeTo(new Vector2d(20, -20))
+//
+//                        .waitSeconds(0.5);
+//            }
+//            else {
+//                pathStart = drivetrain.actionBuilder(initialPose)
+////                        .splineToLinearHeading(new Pose2d(
+////                                25 * pathAllianceAdjX
+////                                , 20 * pathAllianceAdjY
+////                                , Math.toRadians(RobotConstants.UnitConversion.addTwoDegreeValuesTogether(180, headingAllianceAdj))), Math.PI / 2)
+////                        .splineToLinearHeading(new Pose2d(
+////                                25
+////                                ,20
+////                                , initialPose.heading.real), Math.PI / 2)
+////                        .lineToY(20)
+//                        .strafeTo(new Vector2d(20, 20))
+//
+//
+//                        .waitSeconds(0.5);
+//            }
 
             // Log start of action(s)
             telemetry.addData("timestamp", "%.1f seconds", opModeRunTime.seconds());
@@ -320,23 +323,24 @@ public class LoadingLaunchZone extends LinearOpMode {
 
                             // Shoot loaded Artifacts
                             , new ParallelAction(
-                                    shooter.actionActivateShooter(
+                                    shooter.actionActivateShooterVelocity(
                                             RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft
-                                        ,   RobotConstants.Shooter.Setpoint.kAutoLoadingLaunchZone)
-                                    , shooter.actionActivateShooter(
+                                        ,   RobotConstants.Shooter.Setpoint.Velocity.kLongRange)
+                                    , shooter.actionActivateShooterVelocity(
                                             RobotConstants.HardwareConfiguration.kLabelShooterMotorRight
-                                        ,   RobotConstants.Shooter.Setpoint.kAutoLoadingLaunchZone)
+                                        ,   RobotConstants.Shooter.Setpoint.Velocity.kLongRange)
                                     , waitPeriodSecondsThree.build()
                             )
                             , waitPeriodSecondsThree.build()
                             , waitPeriodSecondsHalf.build()
 
                             , new ParallelAction(
-                                shooter.actionActivateShooter(
+                                shooter.actionActivateShooterVelocity(
                                         RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft
-                                    ,   RobotConstants.Shooter.Setpoint.kAutoLoadingLaunchZone)
-                                , shooter.actionActivateShooter(RobotConstants.HardwareConfiguration.kLabelShooterMotorRight
-                                    ,   RobotConstants.Shooter.Setpoint.kAutoLoadingLaunchZone)
+                                    ,   RobotConstants.Shooter.Setpoint.Velocity.kLongRange)
+                                , shooter.actionActivateShooterVelocity(
+                                        RobotConstants.HardwareConfiguration.kLabelShooterMotorRight
+                                    ,   RobotConstants.Shooter.Setpoint.Velocity.kLongRange)
                                 , indexer.actionActivateIndexer(
                                         RobotConstants.HardwareConfiguration.kLabelIndexServoLeft
                                     ,   RobotConstants.Indexer.Servo.Setpoint.kForward)
@@ -348,12 +352,12 @@ public class LoadingLaunchZone extends LinearOpMode {
                             , waitPeriodSecondsThree.build()
 
                             , new ParallelAction(
-                                shooter.actionActivateShooter(
+                                shooter.actionActivateShooterVelocity(
                                         RobotConstants.HardwareConfiguration.kLabelShooterMotorLeft
-                                    ,   RobotConstants.Shooter.Setpoint.kAutoLoadingLaunchZone)
-                                , shooter.actionActivateShooter(
+                                    ,   RobotConstants.Shooter.Setpoint.Velocity.kLongRange)
+                                , shooter.actionActivateShooterVelocity(
                                         RobotConstants.HardwareConfiguration.kLabelShooterMotorRight
-                                    ,   RobotConstants.Shooter.Setpoint.kAutoLoadingLaunchZone)
+                                    ,   RobotConstants.Shooter.Setpoint.Velocity.kLongRange)
                                 , indexer.actionActivateIndexer(
                                         RobotConstants.HardwareConfiguration.kLabelIndexServoLeft
                                     ,   RobotConstants.Indexer.Servo.Setpoint.kForward)
@@ -384,15 +388,27 @@ public class LoadingLaunchZone extends LinearOpMode {
                                         0)
 
                             // Move away from launch zone
-                            , pathStart.build()
+//                            , pathStart.build()
 
+                            , waitPeriodSecondsOneHalf.build()
 
                     )
-
 
                     )
             );
 
+            // Drive to Park
+            driveTime.reset();
+            if (labelAlliance == "blue") {
+                while (opModeIsActive() && (driveTime.seconds() < 1)) {
+                    drivetrain.driveMecanum(0, -.8, .10, .5);
+                }
+            }
+            else {
+                while (opModeIsActive() && (driveTime.seconds() < 1)) {
+                    drivetrain.driveMecanum(0, .8, .10, .5);
+                }
+            }
 
 
             // Log timestamp for completion

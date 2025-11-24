@@ -299,8 +299,8 @@ public class Vision {
         return pattern;
     }
 
-    public String getDetectedAllianceColor() {
-        String detectedColor;
+    public String getDetectedAllianceColor(String currentAlliance) {
+        String detectedColor = currentAlliance;
         AprilTagDetection detectedLocalization = getDetectedLocalization();
 
         if (detectedLocalization != null) {
@@ -311,10 +311,6 @@ public class Vision {
                 detectedColor = "red";
             }
         }
-        else {
-            detectedColor = "unknown";
-        }
-
 
         return detectedColor;
     }

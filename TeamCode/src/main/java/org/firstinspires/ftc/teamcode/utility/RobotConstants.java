@@ -418,8 +418,8 @@ public class RobotConstants {
         public static final class Setpoint {
 
             public static final class Velocity {
-                public static final double kInitial = 1600;
-                public static final double kLongRange = 1600;
+                public static final double kInitial = 1580;
+                public static final double kLongRange = 1580;
                 public static final double kMidRange = 1200;
                 public static final double kCloseRange = 1000;
 
@@ -559,7 +559,7 @@ public class RobotConstants {
             public static final double kPrelift = 0.250;
             public static final double kInitial = kMin;
 
-            public static final double kEndgame = 0.50;
+            public static final double kEndgame = 0.65;
         }
     }
 
@@ -584,6 +584,9 @@ public class RobotConstants {
 
             public static final RevBlinkinLedDriver.BlinkinPattern kReadyToShoot = RevBlinkinLedDriver.BlinkinPattern.RAINBOW_WITH_GLITTER;
             public static final RevBlinkinLedDriver.BlinkinPattern kOnTarget = RevBlinkinLedDriver.BlinkinPattern.COLOR_WAVES_FOREST_PALETTE;
+
+            public static final RevBlinkinLedDriver.BlinkinPattern kOnTargetRed = RevBlinkinLedDriver.BlinkinPattern.COLOR_WAVES_LAVA_PALETTE;
+            public static final RevBlinkinLedDriver.BlinkinPattern kOnTargetBlue = RevBlinkinLedDriver.BlinkinPattern.COLOR_WAVES_OCEAN_PALETTE;
 
         }
 
